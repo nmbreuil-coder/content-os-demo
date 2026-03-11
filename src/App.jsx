@@ -2,6 +2,30 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { db } from "./firebase";
 import { collection, doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
 
+const ThemeCtx=React.createContext({dark:false,T:{},setDark:()=>{}});
+const useT=()=>React.useContext(ThemeCtx).T;
+const useDark=()=>({dark:React.useContext(ThemeCtx).dark,setDark:React.useContext(ThemeCtx).setDark});
+const useMobile=()=>{const[m,setM]=useState(()=>window.innerWidth<768);useEffect(()=>{const h=()=>setM(window.innerWidth<768);window.addEventListener('resize',h);return()=>window.removeEventListener('resize',h)},[]);return m;};
+
+const THEMES={
+  light:{
+    bg:'#F5F3EF',card:'#fff',cardHover:'#FAFAF8',cardAlt:'#FAFAF8',
+    border:'#EAE8E2',borderLight:'#F2EFE8',borderDash:'#D8D4CD',
+    text:'#1A1A1A',textSec:'#6B6B6B',textMuted:'#9B9590',textFaint:'#B0ABA4',
+    input:'#fff',inputBorder:'#E0DDD7',
+    tableHead:'#FAFAF8',calToday:'#FAFCFA',calTodayOver:'#EDF7F2',
+    sidebarBg:'#1A2B25',progressBg:'#F0EDE8',
+  },
+  dark:{
+    bg:'#0F1710',card:'#1A2B20',cardHover:'#223528',cardAlt:'#182818',
+    border:'#2D4035',borderLight:'#243530',borderDash:'#2D4035',
+    text:'#E2DDD4',textSec:'#8A9E90',textMuted:'#5A7060',textFaint:'#4A6050',
+    input:'#1A2B20',inputBorder:'#3A5040',
+    tableHead:'#162616',calToday:'#1A3020',calTodayOver:'#1E3828',
+    sidebarBg:'#0A1A0E',progressBg:'#2A3D32',
+  },
+};
+
 const PM = {
   instagram:{ label:'Instagram', color:'#E1306C', bg:'#FFF0F5', formats:['Post','Reel','Story','Carousel'] },
   facebook: { label:'Facebook',  color:'#1877F2', bg:'#EEF4FF', formats:['Post','Story','Video','Reel'] },
@@ -67,19 +91,21 @@ function ContentTypeBadge({id}){if(!id)return null;const t=CTM[id];if(!t)return 
 function AccountChip({account}){const m=PM[account?.platform];return <span style={{display:'inline-flex',alignItems:'center',gap:4,padding:'2px 8px',borderRadius:20,fontSize:11,fontWeight:500,color:m?.color||'#333',background:m?.bg||'#f5f5f5',whiteSpace:'nowrap'}}><span style={{width:5,height:5,borderRadius:'50%',background:m?.color||'#ccc',display:'inline-block'}}/>{account?.label}</span>}
 
 function Btn({children,onClick,variant='primary',size='md',style:sx={}}){
+  const T=useT();
   const pad=size==='sm'?'5px 12px':'8px 16px';
   const fs=size==='sm'?12:13;
-  const V={primary:{background:'#1A2B25',color:'#fff'},secondary:{background:'#EEEAE3',color:'#1A1A1A'},ghost:{background:'transparent',color:'#6B6B6B'},danger:{background:'#FEF2F2',color:'#DC2626'},green:{background:'#2D6A4F',color:'#fff'}};
+  const V={primary:{background:'#1A2B25',color:'#fff'},secondary:{background:T.cardAlt,color:T.text,border:`1px solid ${T.border}`},ghost:{background:'transparent',color:T.textSec},danger:{background:'#FEF2F2',color:'#DC2626'},green:{background:'#2D6A4F',color:'#fff'}};
   return <button onClick={onClick} style={{display:'inline-flex',alignItems:'center',gap:6,padding:pad,fontSize:fs,borderRadius:8,fontFamily:'inherit',fontWeight:500,cursor:'pointer',border:'none',...V[variant],...sx}}>{children}</button>
 }
 
-const IS={padding:'8px 10px',borderRadius:7,border:'1px solid #E0DDD7',fontSize:13,fontFamily:'inherit',color:'#1A1A1A',background:'#fff',outline:'none',width:'100%',boxSizing:'border-box'};
+const mkIS=(T)=>({padding:'8px 10px',borderRadius:7,border:`1px solid ${T.inputBorder}`,fontSize:13,fontFamily:'inherit',color:T.text,background:T.input,outline:'none',width:'100%',boxSizing:'border-box'});
 
 function Sidebar({view,setView,accounts}){
+  const{dark,setDark}=useDark();
   const grouped={};
   accounts.filter(a=>a.active).forEach(a=>{(grouped[a.platform]??=[]).push(a)});
   return(
-    <aside style={{width:200,background:'#1A2B25',color:'#fff',display:'flex',flexDirection:'column',flexShrink:0,minHeight:'100%'}}>
+    <aside style={{width:200,background:dark?'#0A1A0E':'#1A2B25',color:'#fff',display:'flex',flexDirection:'column',flexShrink:0,minHeight:'100%'}}>
       <div style={{padding:'20px 15px 14px',borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
         <div style={{fontSize:17,color:'#E2DDD4',fontWeight:600,letterSpacing:'-0.3px'}}>Content OS</div>
         <div style={{fontSize:10,color:'rgba(255,255,255,0.28)',marginTop:2}}>Личный контент-план</div>
@@ -102,11 +128,38 @@ function Sidebar({view,setView,accounts}){
           </div>
         ))}
       </div>
+      <div style={{padding:'12px 15px',borderTop:'1px solid rgba(255,255,255,0.07)'}}>
+        <button onClick={()=>setDark(d=>!d)} style={{display:'flex',alignItems:'center',gap:7,width:'100%',background:'rgba(255,255,255,0.07)',border:'none',borderRadius:7,padding:'7px 10px',cursor:'pointer',color:'rgba(255,255,255,0.6)',fontSize:12,fontFamily:'inherit'}}>
+          <span>{dark?'☀️':'🌙'}</span>
+          <span>{dark?'Светлая тема':'Тёмная тема'}</span>
+        </button>
+      </div>
     </aside>
   );
 }
 
+function BottomNav({view,setView}){
+  const T=useT();
+  const{dark,setDark}=useDark();
+  const tabs=[['dashboard','⌂','Главная'],['calendar','▦','Календарь'],['posts','≡','Посты'],['settings','⊙','Аккаунты']];
+  return(
+    <nav style={{position:'fixed',bottom:0,left:0,right:0,background:dark?'#0A1A0E':'#1A2B25',display:'flex',alignItems:'center',paddingBottom:'env(safe-area-inset-bottom)',zIndex:100,borderTop:'1px solid rgba(255,255,255,0.08)'}}>
+      {tabs.map(([id,icon,label])=>(
+        <button key={id} onClick={()=>setView(id)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'10px 4px 8px',border:'none',background:'transparent',color:view===id?'#fff':'rgba(255,255,255,0.38)',fontFamily:'inherit',cursor:'pointer'}}>
+          <span style={{fontSize:20}}>{icon}</span>
+          <span style={{fontSize:10,fontWeight:view===id?600:400}}>{label}</span>
+        </button>
+      ))}
+      <button onClick={()=>setDark(d=>!d)} style={{width:44,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'10px 4px 8px',border:'none',background:'transparent',color:'rgba(255,255,255,0.38)',fontFamily:'inherit',cursor:'pointer'}}>
+        <span style={{fontSize:18}}>{dark?'☀️':'🌙'}</span>
+      </button>
+    </nav>
+  );
+}
+
 function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalendar}){
+  const T=useT();
+  const mob=useMobile();
   const now=new Date();
   const aMap=useMemo(()=>Object.fromEntries(accounts.map(a=>[a.id,a])),[accounts]);
   const upcoming=useMemo(()=>posts.filter(p=>p.scheduledAt&&new Date(p.scheduledAt)>=now&&p.status!=='published').sort((a,b)=>new Date(a.scheduledAt)-new Date(b.scheduledAt)).slice(0,6),[posts]);
@@ -116,19 +169,19 @@ function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalen
   const PostRow=({post,dimmed})=>{
     const acc=aMap[post.accountId];
     return(
-      <div onClick={()=>onSelect(post.id)} style={{background:'#fff',borderRadius:9,padding:'10px 14px',border:'1px solid #EAE8E2',cursor:'pointer',display:'flex',alignItems:'center',gap:10,opacity:dimmed?0.7:1}}
-        onMouseEnter={e=>e.currentTarget.style.background='#FAFAF8'}
-        onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+      <div onClick={()=>onSelect(post.id)} style={{background:T.card,borderRadius:9,padding:'10px 14px',border:`1px solid ${T.border}`,cursor:'pointer',display:'flex',alignItems:'center',gap:10,opacity:dimmed?0.7:1}}
+        onMouseEnter={e=>e.currentTarget.style.background=T.cardHover}
+        onMouseLeave={e=>e.currentTarget.style.background=T.card}>
         <div style={{width:3,height:32,borderRadius:4,background:PM[acc?.platform]?.color||'#ccc',flexShrink:0}}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:13,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{post.title||'(без названия)'}</div>
+          <div style={{fontSize:13,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:T.text}}>{post.title||'(без названия)'}</div>
           <div style={{display:'flex',gap:5,marginTop:3,alignItems:'center'}}>
             {acc&&<AccountChip account={acc}/>}
-            {post.format&&<span style={{fontSize:11,color:'#9B9590'}}>{post.format}</span>}
+            {post.format&&<span style={{fontSize:11,color:T.textMuted}}>{post.format}</span>}
           </div>
         </div>
         <div style={{textAlign:'right',flexShrink:0}}>
-          <div style={{fontSize:12,color:'#6B6B6B',marginBottom:3}}>{displayDate(post.scheduledAt||post.publishedAt)}</div>
+          <div style={{fontSize:12,color:T.textSec,marginBottom:3}}>{displayDate(post.scheduledAt||post.publishedAt)}</div>
           <StatusBadge id={post.status}/>
         </div>
       </div>
@@ -136,10 +189,10 @@ function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalen
   };
 
   return(
-    <div style={{padding:'28px 32px',maxWidth:780,overflowY:'auto',flex:1}}>
-      <div style={{marginBottom:22}}>
-        <h1 style={{fontSize:28,fontWeight:600,margin:0,letterSpacing:'-0.5px',color:'#1A1A1A'}}>Привет 👋</h1>
-        <p style={{color:'#6B6B6B',fontSize:13,marginTop:3,marginBottom:0}}>{now.getDate()} {MG[now.getMonth()]} · {now.toLocaleDateString('ru-RU',{weekday:'long'})}</p>
+    <div style={{padding:mob?'20px 16px 90px':'28px 32px',maxWidth:780,overflowY:'auto',flex:1}}>
+      <div style={{marginBottom:18}}>
+        <h1 style={{fontSize:mob?22:28,fontWeight:600,margin:0,letterSpacing:'-0.5px',color:T.text}}>Привет 👋</h1>
+        <p style={{color:T.textSec,fontSize:mob?12:13,marginTop:3,marginBottom:0}}>{now.getDate()} {MG[now.getMonth()]} · {now.toLocaleDateString('ru-RU',{weekday:'long'})}</p>
       </div>
       {showReminder&&(
         <div style={{background:'linear-gradient(135deg,#1A2B25,#2D4A3E)',borderRadius:12,padding:'14px 18px',marginBottom:20,color:'#fff',display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
@@ -155,21 +208,21 @@ function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalen
           </div>
         </div>
       )}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:22}}>
-        {[['Всего',st.total,'#1A1A1A'],['Идей',st.ideas,'#94A3B8'],['В работе',st.inWork,'#D97706'],['Запланировано',st.scheduled,'#6366F1']].map(([label,val,color])=>(
-          <div key={label} style={{background:'#fff',borderRadius:10,padding:'13px 15px',border:'1px solid #EAE8E2'}}>
+      <div style={{display:'grid',gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)',gap:8,marginBottom:22}}>
+        {[['Всего',st.total,T.text],['Идей',st.ideas,'#94A3B8'],['В работе',st.inWork,'#D97706'],['Запланировано',st.scheduled,'#6366F1']].map(([label,val,color])=>(
+          <div key={label} style={{background:T.card,borderRadius:10,padding:'13px 15px',border:`1px solid ${T.border}`}}>
             <div style={{fontSize:24,fontWeight:700,color,lineHeight:1}}>{val}</div>
-            <div style={{fontSize:11,color:'#6B6B6B',marginTop:4}}>{label}</div>
+            <div style={{fontSize:11,color:T.textSec,marginTop:4}}>{label}</div>
           </div>
         ))}
       </div>
 
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-        <h2 style={{fontSize:16,fontWeight:600,margin:0,color:'#1A1A1A'}}>Ближайшие публикации</h2>
+        <h2 style={{fontSize:16,fontWeight:600,margin:0,color:T.text}}>Ближайшие публикации</h2>
         <Btn onClick={onNew} size="sm">+ Добавить</Btn>
       </div>
       {upcoming.length===0?(
-        <div style={{background:'#fff',borderRadius:10,border:'1px dashed #D8D4CD',padding:'28px',textAlign:'center',color:'#9B9590',marginBottom:20}}>
+        <div style={{background:T.card,borderRadius:10,border:`1px dashed ${T.borderDash}`,padding:'28px',textAlign:'center',color:T.textMuted,marginBottom:20}}>
           <div style={{fontSize:26,marginBottom:6}}>📅</div>
           <div style={{fontSize:13}}>Нет запланированных публикаций</div>
           <div style={{marginTop:10}}><Btn onClick={onNew} size="sm">Создать первую</Btn></div>
@@ -181,11 +234,11 @@ function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalen
       )}
 
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
-        <h2 style={{fontSize:16,fontWeight:600,margin:0,color:'#1A1A1A'}}>Опубликовано сегодня</h2>
+        <h2 style={{fontSize:16,fontWeight:600,margin:0,color:T.text}}>Опубликовано сегодня</h2>
         {publishedToday.length>0&&<span style={{fontSize:12,background:'#ECFDF5',color:'#059669',padding:'2px 8px',borderRadius:20,fontWeight:500}}>{publishedToday.length}</span>}
       </div>
       {publishedToday.length===0?(
-        <div style={{background:'#fff',borderRadius:10,border:'1px solid #EAE8E2',padding:'18px 20px',display:'flex',alignItems:'center',gap:10,color:'#9B9590'}}>
+        <div style={{background:T.card,borderRadius:10,border:`1px solid ${T.border}`,padding:'18px 20px',display:'flex',alignItems:'center',gap:10,color:T.textMuted}}>
           <span style={{fontSize:18}}>🌿</span>
           <span style={{fontSize:13}}>Сегодня ничего не опубликовано</span>
         </div>
@@ -199,6 +252,8 @@ function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalen
 }
 
 function CalendarView({posts,accounts,onSelect,onNewOnDate,onMove}){
+  const T=useT();
+  const mob=useMobile();
   const[mode,setMode]=useState('week');
   const[ref,setRef]=useState(new Date());
   const[dragId,setDragId]=useState(null);
@@ -212,30 +267,30 @@ function CalendarView({posts,accounts,onSelect,onNewOnDate,onMove}){
   const mDays=getMonthGrid(ref);
   const title=mode==='week'?`${wDays[0].getDate()} ${MG[wDays[0].getMonth()]} — ${wDays[6].getDate()} ${MG[wDays[6].getMonth()]} ${wDays[6].getFullYear()}`:`${MN[ref.getMonth()]} ${ref.getFullYear()}`;
   return(
-    <div style={{padding:'28px 32px',flex:1,overflowY:'auto'}}>
+    <div style={{padding:mob?'16px 10px 90px':'28px 32px',flex:1,overflowY:'auto'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16,flexWrap:'wrap',gap:8}}>
-        <h1 style={{fontSize:24,fontWeight:600,margin:0,color:'#1A1A1A'}}>Календарь</h1>
+        <h1 style={{fontSize:mob?18:24,fontWeight:600,margin:0,color:T.text}}>Календарь</h1>
         <div style={{display:'flex',gap:5,alignItems:'center',flexWrap:'wrap'}}>
-          <div style={{display:'flex',background:'#fff',border:'1px solid #E0DDD7',borderRadius:7,overflow:'hidden'}}>
-            {['week','month'].map(m=><button key={m} onClick={()=>setMode(m)} style={{padding:'5px 12px',fontSize:12,fontFamily:'inherit',fontWeight:500,border:'none',cursor:'pointer',background:mode===m?'#1A2B25':'transparent',color:mode===m?'#fff':'#6B6B6B'}}>{m==='week'?'Неделя':'Месяц'}</button>)}
+          <div style={{display:'flex',background:T.card,border:`1px solid ${T.inputBorder}`,borderRadius:7,overflow:'hidden'}}>
+            {['week','month'].map(m=><button key={m} onClick={()=>setMode(m)} style={{padding:'5px 12px',fontSize:12,fontFamily:'inherit',fontWeight:500,border:'none',cursor:'pointer',background:mode===m?'#1A2B25':'transparent',color:mode===m?'#fff':T.textSec}}>{m==='week'?'Неделя':'Месяц'}</button>)}
           </div>
           <Btn onClick={()=>nav(-1)} variant="secondary" size="sm">←</Btn>
-          <span style={{fontSize:12,fontWeight:500,minWidth:180,textAlign:'center',color:'#1A1A1A'}}>{title}</span>
+          <span style={{fontSize:12,fontWeight:500,minWidth:180,textAlign:'center',color:T.text}}>{title}</span>
           <Btn onClick={()=>nav(1)} variant="secondary" size="sm">→</Btn>
           <Btn onClick={()=>setRef(new Date())} variant="secondary" size="sm">Сегодня</Btn>
           <Btn onClick={()=>onNewOnDate(new Date())} size="sm">+ Добавить</Btn>
         </div>
       </div>
-      <div style={{background:'#fff',borderRadius:11,border:'1px solid #EAE8E2',overflow:'hidden'}}>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',borderBottom:'1px solid #EAE8E2',background:'#FAFAF8'}}>
-          {WD.map((wd,i)=><div key={i} style={{padding:'7px',textAlign:'center',fontSize:10,fontWeight:700,color:'#9B9590',letterSpacing:'0.07em',textTransform:'uppercase',borderRight:i<6?'1px solid #EAE8E2':'none'}}>{wd}</div>)}
+      <div style={{background:T.card,borderRadius:11,border:`1px solid ${T.border}`,overflow:'hidden'}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',borderBottom:`1px solid ${T.border}`,background:T.tableHead}}>
+          {WD.map((wd,i)=><div key={i} style={{padding:'7px',textAlign:'center',fontSize:10,fontWeight:700,color:T.textMuted,letterSpacing:'0.07em',textTransform:'uppercase',borderRight:i<6?`1px solid ${T.border}`:'none'}}>{wd}</div>)}
         </div>
         {mode==='week'?(
           <>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',borderBottom:'1px solid #EAE8E2'}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',borderBottom:`1px solid ${T.border}`}}>
               {wDays.map((day,i)=>(
-                <div key={i} style={{padding:'7px',textAlign:'center',borderRight:i<6?'1px solid #EAE8E2':'none',background:isToday(day)?'#F0F7F3':'transparent'}}>
-                  <span style={{fontSize:16,fontWeight:isToday(day)?700:400,color:isToday(day)?'#2D6A4F':'#1A1A1A'}}>{day.getDate()}</span>
+                <div key={i} style={{padding:'7px',textAlign:'center',borderRight:i<6?`1px solid ${T.border}`:'none',background:isToday(day)?T.calToday:'transparent'}}>
+                  <span style={{fontSize:16,fontWeight:isToday(day)?700:400,color:isToday(day)?'#2D6A4F':T.text}}>{day.getDate()}</span>
                 </div>
               ))}
             </div>
@@ -244,9 +299,9 @@ function CalendarView({posts,accounts,onSelect,onNewOnDate,onMove}){
                 const dp=postsFor(day);
                 const over=overDate&&sameDay(new Date(overDate),day);
                 return(
-                  <div key={i} {...dnd(day)} style={{borderRight:i<6?'1px solid #EAE8E2':'none',padding:'5px',minHeight:130,background:over?'#EDF7F2':isToday(day)?'#FAFCFA':'transparent'}}>
+                  <div key={i} {...dnd(day)} style={{borderRight:i<6?`1px solid ${T.border}`:'none',padding:'5px',minHeight:130,background:over?T.calTodayOver:isToday(day)?T.calToday:'transparent'}}>
                     {dp.map(p=><CalChip key={p.id} post={p} account={aMap[p.accountId]} onSelect={onSelect} onDrag={()=>setDragId(p.id)}/>)}
-                    <div onClick={()=>onNewOnDate(day)} style={{marginTop:3,padding:'2px',fontSize:10,color:'#C8C3BB',textAlign:'center',cursor:'pointer',userSelect:'none'}}>+ добавить</div>
+                    <div onClick={()=>onNewOnDate(day)} style={{marginTop:3,padding:'2px',fontSize:10,color:T.textFaint,textAlign:'center',cursor:'pointer',userSelect:'none'}}>+ добавить</div>
                   </div>
                 );
               })}
@@ -259,10 +314,10 @@ function CalendarView({posts,accounts,onSelect,onNewOnDate,onMove}){
               const dp=postsFor(day);
               const over=overDate&&sameDay(new Date(overDate),day);
               return(
-                <div key={i} {...dnd(day)} style={{borderRight:i%7<6?'1px solid #EAE8E2':'none',borderBottom:'1px solid #EAE8E2',padding:'4px',minHeight:68,opacity:inM?1:0.28,background:over?'#EDF7F2':isToday(day)?'#FAFCFA':'transparent'}}>
-                  <div style={{fontSize:11,textAlign:'right',marginBottom:2,fontWeight:isToday(day)?700:400,color:isToday(day)?'#2D6A4F':'#6B6B6B'}}>{day.getDate()}</div>
+                <div key={i} {...dnd(day)} style={{borderRight:i%7<6?`1px solid ${T.border}`:'none',borderBottom:`1px solid ${T.border}`,padding:'4px',minHeight:68,opacity:inM?1:0.28,background:over?T.calTodayOver:isToday(day)?T.calToday:'transparent'}}>
+                  <div style={{fontSize:11,textAlign:'right',marginBottom:2,fontWeight:isToday(day)?700:400,color:isToday(day)?'#2D6A4F':T.textSec}}>{day.getDate()}</div>
                   {dp.slice(0,3).map(p=><CalChip key={p.id} post={p} account={aMap[p.accountId]} onSelect={onSelect} onDrag={()=>setDragId(p.id)} compact/>)}
-                  {dp.length>3&&<div style={{fontSize:9,color:'#9B9590'}}>+{dp.length-3}</div>}
+                  {dp.length>3&&<div style={{fontSize:9,color:T.textMuted}}>+{dp.length-3}</div>}
                 </div>
               );
             })}
@@ -285,15 +340,14 @@ function CalChip({post,account,onSelect,onDrag,compact}){
 }
 
 function PostsList({posts,accounts,onSelect,onNew}){
+  const T=useT();
+  const mob=useMobile();
   const[filters,setFilters]=useState({accountId:'',language:'',status:'',format:'',contentType:''});
   const[sortBy,setSortBy]=useState('date_desc');
   const aMap=useMemo(()=>Object.fromEntries(accounts.map(a=>[a.id,a])),[accounts]);
   const setF=(k,v)=>setFilters(f=>({...f,[k]:v}));
   const hasF=Object.values(filters).some(Boolean);
-
-  // Posts filtered only by accountId for analytics
   const forAnalytics=useMemo(()=>filters.accountId?posts.filter(p=>p.accountId===filters.accountId):posts,[posts,filters.accountId]);
-
   const analytics=useMemo(()=>{
     const total=forAnalytics.length;
     return CONTENT_TYPES.map(t=>{
@@ -302,10 +356,8 @@ function PostsList({posts,accounts,onSelect,onNew}){
       return{...t,count,pct};
     });
   },[forAnalytics]);
-
   const result=useMemo(()=>{
     let r=posts.filter(p=>{
-      const a=aMap[p.accountId];
       if(filters.accountId&&p.accountId!==filters.accountId)return false;
       if(filters.language&&p.language!==filters.language)return false;
       if(filters.status&&p.status!==filters.status)return false;
@@ -315,82 +367,93 @@ function PostsList({posts,accounts,onSelect,onNew}){
     });
     return[...r].sort((a,b)=>sortBy==='date_asc'?new Date(a.scheduledAt||a.createdAt)-new Date(b.scheduledAt||b.createdAt):sortBy==='title'?(a.title||'').localeCompare(b.title||''):new Date(b.scheduledAt||b.createdAt)-new Date(a.scheduledAt||a.createdAt));
   },[posts,filters,sortBy,aMap]);
-
-  const fs={...IS,fontSize:12,padding:'5px 8px',width:'auto',cursor:'pointer'};
+  const IS=mkIS(T);
+  const fs={...IS,fontSize:mob?14:12,padding:'6px 8px',width:'auto',cursor:'pointer'};
   const selAccLabel=filters.accountId?(accounts.find(a=>a.id===filters.accountId)?.label||''):'Все публикации';
-
   return(
-    <div style={{padding:'24px 28px',flex:1,overflowY:'auto'}}>
+    <div style={{padding:mob?'16px 14px 90px':'24px 28px',flex:1,overflowY:'auto'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
         <div>
-          <h1 style={{fontSize:22,fontWeight:700,margin:0,color:'#1A1A1A'}}>Публикации</h1>
-          <div style={{fontSize:12,color:'#9B9590',marginTop:2}}>{selAccLabel} · {result.length} {result.length===1?'запись':'записей'}</div>
+          <h1 style={{fontSize:mob?18:22,fontWeight:700,margin:0,color:T.text}}>Публикации</h1>
+          <div style={{fontSize:12,color:T.textMuted,marginTop:2}}>{selAccLabel} · {result.length} записей</div>
         </div>
         <Btn onClick={onNew}>+ Добавить</Btn>
       </div>
-
-      {/* Analytics block */}
-      <div style={{background:'#fff',borderRadius:11,border:'1px solid #EAE8E2',padding:'14px 18px',marginBottom:12}}>
-        <div style={{fontSize:11,fontWeight:700,color:'#9B9590',textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:10}}>
-          Тип контента {filters.accountId&&<span style={{fontWeight:400,color:'#B0ABA4'}}>· {selAccLabel}</span>}
+      {!mob&&<div style={{background:T.card,borderRadius:11,border:`1px solid ${T.border}`,padding:'14px 18px',marginBottom:12}}>
+        <div style={{fontSize:11,fontWeight:700,color:T.textMuted,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:10}}>
+          Тип контента {filters.accountId&&<span style={{fontWeight:400,color:T.textFaint}}>· {selAccLabel}</span>}
         </div>
         <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
           {analytics.map(t=>(
             <div key={t.id} style={{flex:1,minWidth:120}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:5}}>
                 <span style={{fontSize:12,fontWeight:500,color:t.color}}>{t.label}</span>
-                <span style={{fontSize:18,fontWeight:700,color:'#1A1A1A',lineHeight:1}}>{t.pct}%</span>
+                <span style={{fontSize:18,fontWeight:700,color:T.text,lineHeight:1}}>{t.pct}%</span>
               </div>
-              <div style={{height:5,borderRadius:3,background:'#F0EDE8',overflow:'hidden'}}>
+              <div style={{height:5,borderRadius:3,background:T.progressBg,overflow:'hidden'}}>
                 <div style={{height:'100%',borderRadius:3,background:t.color,width:`${t.pct}%`,transition:'width 0.3s'}}/>
               </div>
-              <div style={{fontSize:11,color:'#9B9590',marginTop:3}}>{t.count} публ.</div>
+              <div style={{fontSize:11,color:T.textMuted,marginTop:3}}>{t.count} публ.</div>
             </div>
           ))}
-          <div style={{flex:1,minWidth:80,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',background:'#FAFAF8',borderRadius:8,padding:'8px'}}>
-            <div style={{fontSize:22,fontWeight:700,color:'#1A1A1A',lineHeight:1}}>{forAnalytics.length}</div>
-            <div style={{fontSize:11,color:'#9B9590',marginTop:3}}>всего</div>
+          <div style={{flex:1,minWidth:80,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',background:T.cardAlt,borderRadius:8,padding:'8px'}}>
+            <div style={{fontSize:22,fontWeight:700,color:T.text,lineHeight:1}}>{forAnalytics.length}</div>
+            <div style={{fontSize:11,color:T.textMuted,marginTop:3}}>всего</div>
           </div>
         </div>
-      </div>
-
-      {/* Filters */}
-      <div style={{background:'#fff',borderRadius:9,padding:'8px 10px',border:'1px solid #EAE8E2',marginBottom:10,display:'flex',gap:5,flexWrap:'wrap',alignItems:'center'}}>
-        <select value={filters.accountId} onChange={e=>setF('accountId',e.target.value)} style={{...fs,fontWeight:filters.accountId?600:'normal',color:filters.accountId?'#1A2B25':'inherit'}}>
+      </div>}
+      <div style={{background:T.card,borderRadius:9,padding:'8px 10px',border:`1px solid ${T.border}`,marginBottom:10,display:'flex',gap:5,flexWrap:'wrap',alignItems:'center'}}>
+        <select value={filters.accountId} onChange={e=>setF('accountId',e.target.value)} style={{...fs,fontWeight:filters.accountId?600:'normal'}}>
           <option value="">Все аккаунты</option>
           {accounts.filter(a=>a.active).map(a=><option key={a.id} value={a.id}>{a.label}</option>)}
         </select>
-        <select value={filters.contentType} onChange={e=>setF('contentType',e.target.value)} style={fs}>
-          <option value="">Тип контента</option>
-          {CONTENT_TYPES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
-        </select>
-        <select value={filters.language} onChange={e=>setF('language',e.target.value)} style={fs}><option value="">Язык</option><option value="ru">RU</option><option value="fr">FR</option><option value="en">EN</option></select>
         <select value={filters.status} onChange={e=>setF('status',e.target.value)} style={fs}><option value="">Все статусы</option>{STATUSES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select>
-        <select value={filters.format} onChange={e=>setF('format',e.target.value)} style={fs}><option value="">Формат</option>{['Post','Reel','Story','Video','Article','Carousel','Poll'].map(f=><option key={f} value={f}>{f}</option>)}</select>
+        {!mob&&<><select value={filters.contentType} onChange={e=>setF('contentType',e.target.value)} style={fs}><option value="">Тип</option>{CONTENT_TYPES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}</select>
+        <select value={filters.language} onChange={e=>setF('language',e.target.value)} style={fs}><option value="">Язык</option><option value="ru">RU</option><option value="fr">FR</option><option value="en">EN</option></select>
+        <select value={filters.format} onChange={e=>setF('format',e.target.value)} style={fs}><option value="">Формат</option>{['Post','Reel','Story','Video','Article','Carousel','Poll'].map(f=><option key={f} value={f}>{f}</option>)}</select></>}
         {hasF&&<Btn onClick={()=>setFilters({accountId:'',language:'',status:'',format:'',contentType:''})} variant="ghost" size="sm">Сбросить</Btn>}
-        <div style={{marginLeft:'auto'}}><select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={fs}><option value="date_desc">Новые сначала</option><option value="date_asc">Старые сначала</option><option value="title">По названию</option></select></div>
       </div>
-
       {result.length===0?(
-        <div style={{background:'#fff',borderRadius:10,border:'1px dashed #D8D4CD',padding:'32px',textAlign:'center',color:'#9B9590'}}><div style={{fontSize:24,marginBottom:6}}>📭</div><div>Ничего не найдено</div></div>
+        <div style={{background:T.card,borderRadius:10,border:`1px dashed ${T.borderDash}`,padding:'32px',textAlign:'center',color:T.textMuted}}><div style={{fontSize:24,marginBottom:6}}>📭</div><div>Ничего не найдено</div></div>
+      ):mob?(
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {result.map(post=>{
+            const acc=aMap[post.accountId];
+            return(
+              <div key={post.id} onClick={()=>onSelect(post.id)} style={{background:T.card,borderRadius:10,padding:'12px 14px',border:`1px solid ${T.border}`,cursor:'pointer',display:'flex',alignItems:'center',gap:10}}
+                onMouseEnter={e=>e.currentTarget.style.background=T.cardHover}
+                onMouseLeave={e=>e.currentTarget.style.background=T.card}>
+                <div style={{width:3,height:36,borderRadius:4,background:PM[acc?.platform]?.color||'#ccc',flexShrink:0}}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:15,fontWeight:500,color:T.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{post.title||'(без названия)'}</div>
+                  <div style={{display:'flex',gap:5,marginTop:4,alignItems:'center',flexWrap:'wrap'}}>
+                    {acc&&<AccountChip account={acc}/>}
+                    <StatusBadge id={post.status}/>
+                  </div>
+                </div>
+                <div style={{fontSize:12,color:T.textSec,flexShrink:0}}>{displayDate(post.scheduledAt)}</div>
+              </div>
+            );
+          })}
+        </div>
       ):(
-        <div style={{background:'#fff',borderRadius:11,border:'1px solid #EAE8E2',overflow:'hidden'}}>
+        <div style={{background:T.card,borderRadius:11,border:`1px solid ${T.border}`,overflow:'hidden'}}>
           <table style={{width:'100%',borderCollapse:'collapse'}}>
-            <thead><tr style={{borderBottom:'1px solid #EAE8E2',background:'#FAFAF8'}}>
-              {['Публикация','Аккаунт','Тип','Формат','Дата','Статус'].map((h,i)=><th key={i} style={{padding:'8px 11px',textAlign:'left',fontSize:11,fontWeight:600,color:'#6B6B6B',letterSpacing:'0.03em'}}>{h}</th>)}
+            <thead><tr style={{borderBottom:`1px solid ${T.border}`,background:T.tableHead}}>
+              {['Публикация','Аккаунт','Тип','Формат','Дата','Статус'].map((h,i)=><th key={i} style={{padding:'8px 11px',textAlign:'left',fontSize:11,fontWeight:600,color:T.textSec,letterSpacing:'0.03em'}}>{h}</th>)}
             </tr></thead>
             <tbody>
               {result.map((post,i)=>{
                 const acc=aMap[post.accountId];
                 return(
-                  <tr key={post.id} onClick={()=>onSelect(post.id)} style={{borderBottom:i<result.length-1?'1px solid #F2EFE8':'none',cursor:'pointer'}}
-                    onMouseEnter={e=>e.currentTarget.style.background='#FAFAF8'}
+                  <tr key={post.id} onClick={()=>onSelect(post.id)} style={{borderBottom:i<result.length-1?`1px solid ${T.borderLight}`:'none',cursor:'pointer'}}
+                    onMouseEnter={e=>e.currentTarget.style.background=T.cardHover}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                    <td style={{padding:'9px 11px'}}><div style={{fontSize:13,fontWeight:500}}>{post.title||'(без названия)'}</div>{post.notes&&<div style={{fontSize:11,color:'#9B9590',marginTop:1,maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{post.notes}</div>}</td>
-                    <td style={{padding:'9px 11px'}}>{acc?<AccountChip account={acc}/>:<span style={{color:'#ccc',fontSize:12}}>—</span>}</td>
+                    <td style={{padding:'9px 11px'}}><div style={{fontSize:13,fontWeight:500,color:T.text}}>{post.title||'(без названия)'}</div>{post.notes&&<div style={{fontSize:11,color:T.textMuted,marginTop:1,maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{post.notes}</div>}</td>
+                    <td style={{padding:'9px 11px'}}>{acc?<AccountChip account={acc}/>:<span style={{color:T.textFaint,fontSize:12}}>—</span>}</td>
                     <td style={{padding:'9px 11px'}}><ContentTypeBadge id={post.contentType}/></td>
-                    <td style={{padding:'9px 11px',fontSize:12,color:'#6B6B6B'}}>{post.format||'—'}</td>
-                    <td style={{padding:'9px 11px',fontSize:12,color:'#6B6B6B',whiteSpace:'nowrap'}}>{displayDate(post.scheduledAt)}</td>
+                    <td style={{padding:'9px 11px',fontSize:12,color:T.textSec}}>{post.format||'—'}</td>
+                    <td style={{padding:'9px 11px',fontSize:12,color:T.textSec,whiteSpace:'nowrap'}}>{displayDate(post.scheduledAt)}</td>
                     <td style={{padding:'9px 11px'}}><StatusBadge id={post.status}/></td>
                   </tr>
                 );
@@ -415,6 +478,7 @@ function getFileType(name){
 }
 
 function MediaField({mediaRef,mediaData,onFileSelect,onClear}){
+  const T=useT();
   const fileRef=React.useRef();
   const ftype=getFileType(mediaRef);
   const isImg=ftype==='image'&&mediaData;
@@ -435,20 +499,18 @@ function MediaField({mediaRef,mediaData,onFileSelect,onClear}){
 
   return(
     <div style={{display:'flex',flexDirection:'column',gap:6}}>
-      <label style={{fontSize:11,fontWeight:600,color:'#6B6B6B',textTransform:'uppercase',letterSpacing:'0.04em'}}>📎 Медиафайл</label>
+      <label style={{fontSize:11,fontWeight:600,color:T.textSec,textTransform:'uppercase',letterSpacing:'0.04em'}}>📎 Медиафайл</label>
       <input ref={fileRef} type="file" accept="image/*,video/*,.pdf,.doc,.docx,.txt,.md" onChange={handleFile} style={{display:'none'}}/>
-
       {isImg&&(
-        <div style={{borderRadius:8,overflow:'hidden',border:'1px solid #EAE8E2',position:'relative',cursor:'pointer',background:'#000'}} onClick={openFile}>
+        <div style={{borderRadius:8,overflow:'hidden',border:`1px solid ${T.border}`,position:'relative',cursor:'pointer',background:'#000'}} onClick={openFile}>
           <img src={mediaData} alt={mediaRef} style={{width:'100%',maxHeight:200,objectFit:'contain',display:'block'}}/>
           <div style={{position:'absolute',top:7,right:7,background:'rgba(0,0,0,0.55)',borderRadius:5,padding:'3px 8px',fontSize:11,color:'#fff',fontWeight:500}}>Открыть ↗</div>
         </div>
       )}
-
       {!isImg&&mediaRef&&(
-        <div style={{display:'flex',alignItems:'center',gap:8,padding:'9px 11px',borderRadius:8,border:'1px solid #EAE8E2',background:'#FAFAF8'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,padding:'9px 11px',borderRadius:8,border:`1px solid ${T.border}`,background:T.cardAlt}}>
           <span style={{fontSize:18,flexShrink:0}}>{FILE_ICONS[ftype]}</span>
-          <span style={{fontSize:12,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:'#1A1A1A'}}>{mediaRef}</span>
+          <span style={{fontSize:12,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:T.text}}>{mediaRef}</span>
           {mediaData&&(
             <button onClick={openFile} style={{background:'#EEF2FF',border:'none',cursor:'pointer',fontSize:11,color:'#6366F1',fontFamily:'inherit',fontWeight:600,padding:'3px 8px',borderRadius:5,flexShrink:0,whiteSpace:'nowrap'}}>
               Открыть ↗
@@ -456,19 +518,17 @@ function MediaField({mediaRef,mediaData,onFileSelect,onClear}){
           )}
         </div>
       )}
-
       <div style={{display:'flex',gap:7,alignItems:'center',flexWrap:'wrap'}}>
-        <button onClick={()=>fileRef.current.click()} style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 13px',fontSize:12,borderRadius:7,border:'1px solid #E0DDD7',background:'#fff',cursor:'pointer',fontFamily:'inherit',color:'#1A1A1A',fontWeight:500,whiteSpace:'nowrap'}}>
+        <button onClick={()=>fileRef.current.click()} style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 13px',fontSize:12,borderRadius:7,border:`1px solid ${T.inputBorder}`,background:T.card,cursor:'pointer',fontFamily:'inherit',color:T.text,fontWeight:500,whiteSpace:'nowrap'}}>
           {mediaRef?'Заменить файл':'📁 Выбрать файл'}
         </button>
-        {mediaRef&&<button onClick={onClear} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:'#94A3B8',fontFamily:'inherit',padding:'0 4px'}}>Удалить</button>}
+        {mediaRef&&<button onClick={onClear} style={{background:'none',border:'none',cursor:'pointer',fontSize:12,color:T.textMuted,fontFamily:'inherit',padding:'0 4px'}}>Удалить</button>}
       </div>
-
       <div style={{display:'flex',alignItems:'center',gap:6}}>
-        <span style={{fontSize:11,color:'#9B9590',whiteSpace:'nowrap'}}>или путь вручную:</span>
-        <input value={mediaRef} onChange={e=>onFileSelect(e.target.value,null)} placeholder="~/Desktop/file.jpg" style={{...IS,fontSize:12}}/>
+        <span style={{fontSize:11,color:T.textMuted,whiteSpace:'nowrap'}}>или путь вручную:</span>
+        <input value={mediaRef} onChange={e=>onFileSelect(e.target.value,null)} placeholder="~/Desktop/file.jpg" style={{...mkIS(T),fontSize:12}}/>
       </div>
-      <div style={{fontSize:10,color:'#B0ABA4'}}>Изображения сохраняются внутри приложения. Видео — лучше указывать путь.</div>
+      <div style={{fontSize:10,color:T.textFaint}}>Изображения сохраняются внутри приложения. Видео — лучше указывать путь.</div>
     </div>
   );
 }
@@ -482,67 +542,70 @@ function PostPanel({post,accounts,initDate,onSave,onDelete,onClose}){
   const selAcc=accounts.find(a=>a.id===form.accountId);
   const formats=selAcc?(PM[selAcc.platform]?.formats||['Post']):['Post'];
   useEffect(()=>{if(formats.length&&!formats.includes(form.format))sF('format',formats[0])},[form.accountId]);
+  const T=useT();
+  const IS=mkIS(T);
   function handleSave(){
     const now=new Date().toISOString();
     const d={...form,updatedAt:now,...(isNew?{createdAt:now}:{})};
     d.scheduledAt=form.scheduledAt?new Date(form.scheduledAt+'T12:00:00').toISOString():null;
     onSave(d);
   }
+  const lbl={fontSize:11,fontWeight:600,color:T.textSec,textTransform:'uppercase',letterSpacing:'0.04em'};
   return(
     <>
-      <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.22)',zIndex:200}}/>
-      <div style={{position:'fixed',right:0,top:0,bottom:0,width:430,background:'#fff',zIndex:201,boxShadow:'-4px 0 24px rgba(0,0,0,0.1)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
-        <div style={{padding:'14px 18px',borderBottom:'1px solid #EAE8E2',flexShrink:0}}>
+      <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.35)',zIndex:200}}/>
+      <div style={{position:'fixed',right:0,top:0,bottom:0,width:mob?'100%':430,background:T.card,zIndex:201,boxShadow:'-4px 0 24px rgba(0,0,0,0.2)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        <div style={{padding:mob?'16px 18px':'14px 18px',borderBottom:`1px solid ${T.border}`,flexShrink:0}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
             <div>
-              <div style={{fontSize:16,fontWeight:600,color:'#1A1A1A'}}>{isNew?'Новая публикация':(form.title||'(без названия)')}</div>
+              <div style={{fontSize:mob?18:16,fontWeight:600,color:T.text}}>{isNew?'Новая публикация':(form.title||'(без названия)')}</div>
               {!isNew&&<div style={{display:'flex',gap:5,marginTop:5,alignItems:'center',flexWrap:'wrap'}}>{selAcc&&<AccountChip account={selAcc}/>}<StatusBadge id={form.status}/></div>}
             </div>
-            <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'#9B9590',fontSize:18,padding:'0 2px',lineHeight:1}}>✕</button>
+            <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:T.textMuted,fontSize:22,padding:'0 4px',lineHeight:1}}>✕</button>
           </div>
         </div>
-        <div style={{flex:1,overflowY:'auto',padding:'14px 18px',display:'flex',flexDirection:'column',gap:11}}>
-          <div style={{display:'flex',flexDirection:'column',gap:3}}>
-            <label style={{fontSize:11,fontWeight:600,color:'#6B6B6B',textTransform:'uppercase',letterSpacing:'0.04em'}}>Название</label>
-            <input value={form.title} onChange={e=>sF('title',e.target.value)} placeholder="Тема или заголовок публикации" style={{...IS,fontSize:14}}/>
+        <div style={{flex:1,overflowY:'auto',padding:mob?'16px 18px':'14px 18px',display:'flex',flexDirection:'column',gap:mob?14:11}}>
+          <div style={{display:'flex',flexDirection:'column',gap:4}}>
+            <label style={lbl}>Название</label>
+            <input value={form.title} onChange={e=>sF('title',e.target.value)} placeholder="Тема или заголовок публикации" style={{...IS,fontSize:mob?16:14}}/>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
             <div style={{display:'flex',flexDirection:'column',gap:3}}>
-              <label style={{fontSize:11,fontWeight:600,color:'#6B6B6B',textTransform:'uppercase',letterSpacing:'0.04em'}}>Аккаунт</label>
+              <label style={lbl}>Аккаунт</label>
               <select value={form.accountId} onChange={e=>sF('accountId',e.target.value)} style={IS}>{accounts.filter(a=>a.active).map(a=><option key={a.id} value={a.id}>{a.label}</option>)}</select>
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:3}}>
-              <label style={{fontSize:11,fontWeight:600,color:'#6B6B6B',textTransform:'uppercase',letterSpacing:'0.04em'}}>Формат</label>
+              <label style={lbl}>Формат</label>
               <select value={form.format} onChange={e=>sF('format',e.target.value)} style={IS}>{formats.map(f=><option key={f} value={f}>{f}</option>)}</select>
             </div>
           </div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}}>
             <div style={{display:'flex',flexDirection:'column',gap:3}}>
-              <label style={{fontSize:11,fontWeight:600,color:'#6B6B6B',textTransform:'uppercase',letterSpacing:'0.04em'}}>Язык</label>
+              <label style={lbl}>Язык</label>
               <select value={form.language} onChange={e=>sF('language',e.target.value)} style={IS}><option value="ru">RU</option><option value="fr">FR</option><option value="en">EN</option></select>
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:3}}>
-              <label style={{fontSize:11,fontWeight:600,color:'#6B6B6B',textTransform:'uppercase',letterSpacing:'0.04em'}}>Тип контента</label>
+              <label style={lbl}>Тип контента</label>
               <select value={form.contentType||''} onChange={e=>sF('contentType',e.target.value)} style={IS}>
                 <option value="">— не указан —</option>
                 {CONTENT_TYPES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
               </select>
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:3}}>
-              <label style={{fontSize:11,fontWeight:600,color:'#6B6B6B',textTransform:'uppercase',letterSpacing:'0.04em'}}>Статус</label>
+              <label style={lbl}>Статус</label>
               <select value={form.status} onChange={e=>sF('status',e.target.value)} style={IS}>{STATUSES.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select>
             </div>
           </div>
           <div style={{display:'flex',flexDirection:'column',gap:3}}>
-            <label style={{fontSize:11,fontWeight:600,color:'#6B6B6B',textTransform:'uppercase',letterSpacing:'0.04em'}}>Дата</label>
+            <label style={lbl}>Дата</label>
             <input type="date" value={form.scheduledAt} onChange={e=>sF('scheduledAt',e.target.value)} style={IS}/>
           </div>
           <div style={{display:'flex',flexDirection:'column',gap:3}}>
-            <label style={{fontSize:11,fontWeight:600,color:'#6B6B6B',textTransform:'uppercase',letterSpacing:'0.04em'}}>Текст публикации</label>
+            <label style={lbl}>Текст публикации</label>
             <textarea value={form.text} onChange={e=>sF('text',e.target.value)} placeholder="Финальный текст для публикации..." rows={4} style={{...IS,resize:'vertical',lineHeight:1.6}}/>
           </div>
           <div style={{display:'flex',flexDirection:'column',gap:3}}>
-            <label style={{fontSize:11,fontWeight:600,color:'#6B6B6B',textTransform:'uppercase',letterSpacing:'0.04em'}}>Заметки</label>
+            <label style={lbl}>Заметки</label>
             <textarea value={form.notes} onChange={e=>sF('notes',e.target.value)} placeholder="Идеи, контекст, напоминания..." rows={2} style={{...IS,resize:'vertical',lineHeight:1.6}}/>
           </div>
           <MediaField
@@ -552,7 +615,7 @@ function PostPanel({post,accounts,initDate,onSave,onDelete,onClose}){
             onClear={()=>setForm(f=>({...f,mediaRef:'',mediaData:null}))}
           />
         </div>
-        <div style={{padding:'11px 18px',borderTop:'1px solid #EAE8E2',display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
+        <div style={{padding:'11px 18px',borderTop:`1px solid ${T.border}`,display:'flex',justifyContent:'space-between',alignItems:'center',flexShrink:0}}>
           <div>{!isNew&&<Btn onClick={()=>onDelete(post.id)} variant="danger" size="sm">Удалить</Btn>}</div>
           <div style={{display:'flex',gap:6}}><Btn onClick={onClose} variant="secondary">Отмена</Btn><Btn onClick={handleSave}>{isNew?'Создать':'Сохранить'}</Btn></div>
         </div>
@@ -562,24 +625,27 @@ function PostPanel({post,accounts,initDate,onSave,onDelete,onClose}){
 }
 
 function Settings({accounts,setAccounts}){
+  const T=useT();
+  const mob=useMobile();
+  const IS=mkIS(T);
   const[showAdd,setShowAdd]=useState(false);
   const[newAcc,setNewAcc]=useState({platform:'instagram',label:'',language:'ru'});
   const toggle=id=>setAccounts(as=>as.map(a=>a.id===id?{...a,active:!a.active}:a));
   const remove=id=>{if(window.confirm('Удалить аккаунт?'))setAccounts(as=>as.filter(a=>a.id!==id))};
   function add(){if(!newAcc.label.trim())return;setAccounts(as=>[...as,{...newAcc,id:`acc_${Date.now()}`,active:true}]);setNewAcc({platform:'instagram',label:'',language:'ru'});setShowAdd(false)}
   return(
-    <div style={{padding:'28px 32px',maxWidth:520,overflowY:'auto',flex:1}}>
-      <h1 style={{fontSize:24,fontWeight:600,margin:'0 0 4px',color:'#1A1A1A'}}>Аккаунты</h1>
-      <p style={{color:'#6B6B6B',fontSize:13,margin:'0 0 18px'}}>Управляйте аккаунтами, скрывайте неактивные, добавляйте новые.</p>
+    <div style={{padding:mob?'20px 16px 90px':'28px 32px',maxWidth:520,overflowY:'auto',flex:1}}>
+      <h1 style={{fontSize:24,fontWeight:600,margin:'0 0 4px',color:T.text}}>Аккаунты</h1>
+      <p style={{color:T.textSec,fontSize:13,margin:'0 0 18px'}}>Управляйте аккаунтами, скрывайте неактивные, добавляйте новые.</p>
       <div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:12}}>
         {accounts.map(acc=>{
           const m=PM[acc.platform];
           return(
-            <div key={acc.id} style={{background:'#fff',borderRadius:9,padding:'9px 13px',border:'1px solid #EAE8E2',display:'flex',alignItems:'center',gap:9,opacity:acc.active?1:0.5}}>
+            <div key={acc.id} style={{background:T.card,borderRadius:9,padding:'9px 13px',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:9,opacity:acc.active?1:0.5}}>
               <span style={{width:8,height:8,borderRadius:'50%',background:m?.color||'#ccc',display:'inline-block',flexShrink:0}}/>
-              <div style={{flex:1}}><div style={{fontSize:13,fontWeight:500}}>{acc.label}</div><div style={{fontSize:11,color:'#9B9590'}}>{m?.label} · {acc.language?.toUpperCase()}</div></div>
-              <button onClick={()=>toggle(acc.id)} style={{padding:'3px 9px',borderRadius:5,border:'1px solid #E0DDD7',fontSize:11,cursor:'pointer',fontFamily:'inherit',background:acc.active?'#ECFDF5':'#F8FAFC',color:acc.active?'#059669':'#94A3B8'}}>{acc.active?'Активен':'Скрыт'}</button>
-              <button onClick={()=>remove(acc.id)} style={{background:'none',border:'none',cursor:'pointer',color:'#CBD5E1',fontSize:16,padding:'0 2px',lineHeight:1}}>×</button>
+              <div style={{flex:1}}><div style={{fontSize:13,fontWeight:500,color:T.text}}>{acc.label}</div><div style={{fontSize:11,color:T.textMuted}}>{m?.label} · {acc.language?.toUpperCase()}</div></div>
+              <button onClick={()=>toggle(acc.id)} style={{padding:'3px 9px',borderRadius:5,border:`1px solid ${T.inputBorder}`,fontSize:11,cursor:'pointer',fontFamily:'inherit',background:acc.active?'#ECFDF5':'transparent',color:acc.active?'#059669':'#94A3B8'}}>{acc.active?'Активен':'Скрыт'}</button>
+              <button onClick={()=>remove(acc.id)} style={{background:'none',border:'none',cursor:'pointer',color:T.textFaint,fontSize:16,padding:'0 2px',lineHeight:1}}>×</button>
             </div>
           );
         })}
@@ -587,12 +653,12 @@ function Settings({accounts,setAccounts}){
       {!showAdd?(
         <Btn onClick={()=>setShowAdd(true)} variant="secondary">+ Добавить аккаунт</Btn>
       ):(
-        <div style={{background:'#fff',borderRadius:10,padding:'14px 16px',border:'1px solid #EAE8E2'}}>
-          <div style={{fontSize:15,fontWeight:600,marginBottom:10,color:'#1A1A1A'}}>Новый аккаунт</div>
+        <div style={{background:T.card,borderRadius:10,padding:'14px 16px',border:`1px solid ${T.border}`}}>
+          <div style={{fontSize:15,fontWeight:600,marginBottom:10,color:T.text}}>Новый аккаунт</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:10}}>
-            <div style={{display:'flex',flexDirection:'column',gap:3}}><label style={{fontSize:11,fontWeight:600,color:'#6B6B6B'}}>Платформа</label><select value={newAcc.platform} onChange={e=>setNewAcc(a=>({...a,platform:e.target.value}))} style={IS}>{Object.entries(PM).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
-            <div style={{display:'flex',flexDirection:'column',gap:3}}><label style={{fontSize:11,fontWeight:600,color:'#6B6B6B'}}>Название</label><input value={newAcc.label} onChange={e=>setNewAcc(a=>({...a,label:e.target.value}))} placeholder="Instagram FR" style={IS}/></div>
-            <div style={{display:'flex',flexDirection:'column',gap:3}}><label style={{fontSize:11,fontWeight:600,color:'#6B6B6B'}}>Язык</label><select value={newAcc.language} onChange={e=>setNewAcc(a=>({...a,language:e.target.value}))} style={IS}><option value="ru">RU</option><option value="fr">FR</option><option value="en">EN</option><option value="multi">Multi</option></select></div>
+            <div style={{display:'flex',flexDirection:'column',gap:3}}><label style={{fontSize:11,fontWeight:600,color:T.textSec}}>Платформа</label><select value={newAcc.platform} onChange={e=>setNewAcc(a=>({...a,platform:e.target.value}))} style={IS}>{Object.entries(PM).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
+            <div style={{display:'flex',flexDirection:'column',gap:3}}><label style={{fontSize:11,fontWeight:600,color:T.textSec}}>Название</label><input value={newAcc.label} onChange={e=>setNewAcc(a=>({...a,label:e.target.value}))} placeholder="Instagram FR" style={IS}/></div>
+            <div style={{display:'flex',flexDirection:'column',gap:3}}><label style={{fontSize:11,fontWeight:600,color:T.textSec}}>Язык</label><select value={newAcc.language} onChange={e=>setNewAcc(a=>({...a,language:e.target.value}))} style={IS}><option value="ru">RU</option><option value="fr">FR</option><option value="en">EN</option><option value="multi">Multi</option></select></div>
           </div>
           <div style={{display:'flex',gap:6}}><Btn onClick={add}>Добавить</Btn><Btn onClick={()=>setShowAdd(false)} variant="secondary">Отмена</Btn></div>
         </div>
@@ -611,6 +677,10 @@ export default function App(){
   const[loading,setLoading]=useState(true);
   const[panel,setPanel]=useState(null);
   const[dismissed,setDismissed]=useState(false);
+  const[dark,setDark]=useState(()=>localStorage.getItem('theme')==='dark');
+  const T=dark?THEMES.dark:THEMES.light;
+
+  useEffect(()=>{localStorage.setItem('theme',dark?'dark':'light')},[dark]);
 
   // Load posts from Firebase
   useEffect(()=>{
@@ -689,24 +759,37 @@ export default function App(){
 
   if(loading){
     return(
-      <div style={{display:'flex',height:'100vh',alignItems:'center',justifyContent:'center',background:'#F5F3EF',fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif'}}>
-        <div style={{textAlign:'center'}}>
-          <div style={{fontSize:32,marginBottom:12}}>🌿</div>
-          <div style={{fontSize:14,color:'#6B6B6B'}}>Загружаем данные...</div>
+      <ThemeCtx.Provider value={{dark,T,setDark}}>
+        <div style={{display:'flex',height:'100vh',alignItems:'center',justifyContent:'center',background:T.bg,fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif'}}>
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:32,marginBottom:12}}>🌿</div>
+            <div style={{fontSize:14,color:T.textSec}}>Загружаем данные...</div>
+          </div>
         </div>
-      </div>
+      </ThemeCtx.Provider>
     );
   }
 
   return(
-    <div style={{display:'flex',height:'100vh',width:'100%',background:'#F5F3EF',overflow:'hidden',fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif'}}>
-      <Sidebar view={view} setView={setView} accounts={accounts}/>
+    <ThemeCtx.Provider value={{dark,T,setDark}}>
+      <AppInner view={view} setView={setView} accounts={accounts} setAccounts={setAccounts} posts={posts} panel={panel} setPanel={setPanel} panelPost={panelPost} panelDate={panelDate} showReminder={showReminder} setDismissed={setDismissed} savePost={savePost} deletePost={deletePost} movePost={movePost}/>
+    </ThemeCtx.Provider>
+  );
+}
+
+function AppInner({view,setView,accounts,setAccounts,posts,panel,setPanel,panelPost,panelDate,showReminder,setDismissed,savePost,deletePost,movePost}){
+  const T=useT();
+  const mob=useMobile();
+  return(
+    <div style={{display:'flex',height:'100vh',width:'100%',background:T.bg,overflow:'hidden',fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif'}}>
+      {!mob&&<Sidebar view={view} setView={setView} accounts={accounts}/>}
       <main style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column'}}>
         {view==='dashboard'&&<Dashboard posts={posts} accounts={accounts} showReminder={showReminder} onDismiss={()=>setDismissed(true)} onNew={()=>setPanel('new')} onSelect={setPanel} goCalendar={()=>setView('calendar')}/>}
         {view==='calendar'&&<CalendarView posts={posts} accounts={accounts} onSelect={setPanel} onNewOnDate={d=>setPanel({date:d})} onMove={movePost}/>}
         {view==='posts'&&<PostsList posts={posts} accounts={accounts} onSelect={setPanel} onNew={()=>setPanel('new')}/>}
         {view==='settings'&&<Settings accounts={accounts} setAccounts={setAccounts}/>}
       </main>
+      {mob&&<BottomNav view={view} setView={setView}/>}
       {panel&&<PostPanel post={panelPost} accounts={accounts} initDate={panelDate} onSave={savePost} onDelete={deletePost} onClose={()=>setPanel(null)}/>}
     </div>
   );
