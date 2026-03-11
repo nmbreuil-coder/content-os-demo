@@ -13,16 +13,16 @@ const THEMES={
     border:'#EAE8E2',borderLight:'#F2EFE8',borderDash:'#D8D4CD',
     text:'#1A1A1A',textSec:'#6B6B6B',textMuted:'#9B9590',textFaint:'#B0ABA4',
     input:'#fff',inputBorder:'#E0DDD7',
-    tableHead:'#FAFAF8',calToday:'#FAFCFA',calTodayOver:'#EDF7F2',
-    sidebarBg:'#1A2B25',progressBg:'#F0EDE8',
+    tableHead:'#FAFAF8',calToday:'#FAFAFF',calTodayOver:'#EDEEFF',
+    sidebarBg:'#1E1B4B',progressBg:'#F0EDE8',
   },
   dark:{
-    bg:'#0F1710',card:'#1A2B20',cardHover:'#223528',cardAlt:'#182818',
-    border:'#2D4035',borderLight:'#243530',borderDash:'#2D4035',
-    text:'#E2DDD4',textSec:'#8A9E90',textMuted:'#5A7060',textFaint:'#4A6050',
-    input:'#1A2B20',inputBorder:'#3A5040',
-    tableHead:'#162616',calToday:'#1A3020',calTodayOver:'#1E3828',
-    sidebarBg:'#0A1A0E',progressBg:'#2A3D32',
+    bg:'#0D0B2E',card:'#1A1845',cardHover:'#221F55',cardAlt:'#161440',
+    border:'#2D2A6E',borderLight:'#1F1C5A',borderDash:'#2D2A6E',
+    text:'#E2DDD4',textSec:'#8A9E90',textMuted:'#5A58A0',textFaint:'#4A4890',
+    input:'#1A1845',inputBorder:'#3A3880',
+    tableHead:'#131045',calToday:'#1A1850',calTodayOver:'#1E1C58',
+    sidebarBg:'#13114A',progressBg:'#2A2870',
   },
 };
 
@@ -39,7 +39,7 @@ const PM = {
 const STATUSES = [
   { id:'idea',      label:'Идея',          color:'#94A3B8', bg:'#F1F5F9' },
   { id:'draft',     label:'Черновик',      color:'#D97706', bg:'#FFFBEB' },
-  { id:'ready',     label:'Готово',        color:'#059669', bg:'#ECFDF5' },
+  { id:'ready',     label:'Готово',        color:'#6366F1', bg:'#EDEDFF' },
   { id:'scheduled', label:'Запланировано', color:'#6366F1', bg:'#EEF2FF' },
   { id:'published', label:'Опубликовано',  color:'#64748B', bg:'#F8FAFC' },
 ];
@@ -49,7 +49,7 @@ const CONTENT_TYPES=[
   {id:'expert',       label:'Экспертный',     color:'#0A66C2',bg:'#EEF6FF'},
   {id:'sales',        label:'Продающий',      color:'#D97706',bg:'#FFFBEB'},
   {id:'personal',     label:'Личное',         color:'#7C3AED',bg:'#F5F0FF'},
-  {id:'cases',        label:'Кейсы',          color:'#059669',bg:'#ECFDF5'},
+  {id:'cases',        label:'Кейсы',          color:'#6366F1',bg:'#EDEDFF'},
   {id:'reviews',      label:'Отзывы',         color:'#0891B2',bg:'#ECFEFF'},
 ];
 const CTM=Object.fromEntries(CONTENT_TYPES.map(t=>[t.id,t]));
@@ -94,7 +94,7 @@ function Btn({children,onClick,variant='primary',size='md',style:sx={}}){
   const T=useT();
   const pad=size==='sm'?'5px 12px':'8px 16px';
   const fs=size==='sm'?12:13;
-  const V={primary:{background:'#1A2B25',color:'#fff'},secondary:{background:T.cardAlt,color:T.text,border:`1px solid ${T.border}`},ghost:{background:'transparent',color:T.textSec},danger:{background:'#FEF2F2',color:'#DC2626'},green:{background:'#2D6A4F',color:'#fff'}};
+  const V={primary:{background:'#1E1B4B',color:'#fff'},secondary:{background:T.cardAlt,color:T.text,border:`1px solid ${T.border}`},ghost:{background:'transparent',color:T.textSec},danger:{background:'#FEF2F2',color:'#DC2626'},green:{background:'#4F46C8',color:'#fff'}};
   return <button onClick={onClick} style={{display:'inline-flex',alignItems:'center',gap:6,padding:pad,fontSize:fs,borderRadius:8,fontFamily:'inherit',fontWeight:500,cursor:'pointer',border:'none',...V[variant],...sx}}>{children}</button>
 }
 
@@ -105,7 +105,7 @@ function Sidebar({view,setView,accounts}){
   const grouped={};
   accounts.filter(a=>a.active).forEach(a=>{(grouped[a.platform]??=[]).push(a)});
   return(
-    <aside style={{width:200,background:dark?'#0A1A0E':'#1A2B25',color:'#fff',display:'flex',flexDirection:'column',flexShrink:0,minHeight:'100%'}}>
+    <aside style={{width:200,background:dark?'#13114A':'#1E1B4B',color:'#fff',display:'flex',flexDirection:'column',flexShrink:0,minHeight:'100%'}}>
       <div style={{padding:'20px 15px 14px',borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
         <div style={{fontSize:17,color:'#E2DDD4',fontWeight:600,letterSpacing:'-0.3px'}}>Content OS</div>
         <div style={{fontSize:10,color:'rgba(255,255,255,0.28)',marginTop:2}}>Личный контент-план</div>
@@ -143,7 +143,7 @@ function BottomNav({view,setView}){
   const{dark,setDark}=useDark();
   const tabs=[['dashboard','⌂','Главная'],['calendar','▦','Календарь'],['posts','≡','Посты'],['settings','⊙','Аккаунты']];
   return(
-    <nav style={{position:'fixed',bottom:0,left:0,right:0,background:dark?'#0A1A0E':'#1A2B25',display:'flex',alignItems:'center',paddingBottom:'env(safe-area-inset-bottom)',zIndex:100,borderTop:'1px solid rgba(255,255,255,0.08)'}}>
+    <nav style={{position:'fixed',bottom:0,left:0,right:0,background:dark?'#13114A':'#1E1B4B',display:'flex',alignItems:'center',paddingBottom:'env(safe-area-inset-bottom)',zIndex:100,borderTop:'1px solid rgba(255,255,255,0.08)'}}>
       {tabs.map(([id,icon,label])=>(
         <button key={id} onClick={()=>setView(id)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'10px 4px 8px',border:'none',background:'transparent',color:view===id?'#fff':'rgba(255,255,255,0.38)',fontFamily:'inherit',cursor:'pointer'}}>
           <span style={{fontSize:20}}>{icon}</span>
@@ -195,9 +195,9 @@ function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalen
         <p style={{color:T.textSec,fontSize:mob?12:13,marginTop:3,marginBottom:0}}>{now.getDate()} {MG[now.getMonth()]} · {now.toLocaleDateString('ru-RU',{weekday:'long'})}</p>
       </div>
       {showReminder&&(
-        <div style={{background:'linear-gradient(135deg,#1A2B25,#2D4A3E)',borderRadius:12,padding:'14px 18px',marginBottom:20,color:'#fff',display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+        <div style={{background:'linear-gradient(135deg,#1E1B4B,#3D3A8E)',borderRadius:12,padding:'14px 18px',marginBottom:20,color:'#fff',display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
           <div>
-            <div style={{fontSize:10,fontWeight:700,color:'#9AC5B0',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:3}}>Напоминание</div>
+            <div style={{fontSize:10,fontWeight:700,color:'#A5B4FC',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:3}}>Напоминание</div>
             <div style={{fontSize:14,fontWeight:500}}>На этой неделе нет запланированных публикаций</div>
             <div style={{fontSize:12,color:'rgba(255,255,255,0.4)',marginTop:2}}>Накидайте хотя бы по одному посту в ключевые каналы</div>
           </div>
@@ -235,7 +235,7 @@ function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalen
 
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
         <h2 style={{fontSize:16,fontWeight:600,margin:0,color:T.text}}>Опубликовано сегодня</h2>
-        {publishedToday.length>0&&<span style={{fontSize:12,background:'#ECFDF5',color:'#059669',padding:'2px 8px',borderRadius:20,fontWeight:500}}>{publishedToday.length}</span>}
+        {publishedToday.length>0&&<span style={{fontSize:12,background:'#EDEDFF',color:'#6366F1',padding:'2px 8px',borderRadius:20,fontWeight:500}}>{publishedToday.length}</span>}
       </div>
       {publishedToday.length===0?(
         <div style={{background:T.card,borderRadius:10,border:`1px solid ${T.border}`,padding:'18px 20px',display:'flex',alignItems:'center',gap:10,color:T.textMuted}}>
@@ -272,7 +272,7 @@ function CalendarView({posts,accounts,onSelect,onNewOnDate,onMove}){
         <h1 style={{fontSize:mob?18:24,fontWeight:600,margin:0,color:T.text}}>Календарь</h1>
         <div style={{display:'flex',gap:5,alignItems:'center',flexWrap:'wrap'}}>
           <div style={{display:'flex',background:T.card,border:`1px solid ${T.inputBorder}`,borderRadius:7,overflow:'hidden'}}>
-            {['week','month'].map(m=><button key={m} onClick={()=>setMode(m)} style={{padding:'5px 12px',fontSize:12,fontFamily:'inherit',fontWeight:500,border:'none',cursor:'pointer',background:mode===m?'#1A2B25':'transparent',color:mode===m?'#fff':T.textSec}}>{m==='week'?'Неделя':'Месяц'}</button>)}
+            {['week','month'].map(m=><button key={m} onClick={()=>setMode(m)} style={{padding:'5px 12px',fontSize:12,fontFamily:'inherit',fontWeight:500,border:'none',cursor:'pointer',background:mode===m?'#1E1B4B':'transparent',color:mode===m?'#fff':T.textSec}}>{m==='week'?'Неделя':'Месяц'}</button>)}
           </div>
           <Btn onClick={()=>nav(-1)} variant="secondary" size="sm">←</Btn>
           <span style={{fontSize:12,fontWeight:500,minWidth:180,textAlign:'center',color:T.text}}>{title}</span>
@@ -290,7 +290,7 @@ function CalendarView({posts,accounts,onSelect,onNewOnDate,onMove}){
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',borderBottom:`1px solid ${T.border}`}}>
               {wDays.map((day,i)=>(
                 <div key={i} style={{padding:'7px',textAlign:'center',borderRight:i<6?`1px solid ${T.border}`:'none',background:isToday(day)?T.calToday:'transparent'}}>
-                  <span style={{fontSize:16,fontWeight:isToday(day)?700:400,color:isToday(day)?'#2D6A4F':T.text}}>{day.getDate()}</span>
+                  <span style={{fontSize:16,fontWeight:isToday(day)?700:400,color:isToday(day)?'#4F46C8':T.text}}>{day.getDate()}</span>
                 </div>
               ))}
             </div>
@@ -315,7 +315,7 @@ function CalendarView({posts,accounts,onSelect,onNewOnDate,onMove}){
               const over=overDate&&sameDay(new Date(overDate),day);
               return(
                 <div key={i} {...dnd(day)} style={{borderRight:i%7<6?`1px solid ${T.border}`:'none',borderBottom:`1px solid ${T.border}`,padding:'4px',minHeight:68,opacity:inM?1:0.28,background:over?T.calTodayOver:isToday(day)?T.calToday:'transparent'}}>
-                  <div style={{fontSize:11,textAlign:'right',marginBottom:2,fontWeight:isToday(day)?700:400,color:isToday(day)?'#2D6A4F':T.textSec}}>{day.getDate()}</div>
+                  <div style={{fontSize:11,textAlign:'right',marginBottom:2,fontWeight:isToday(day)?700:400,color:isToday(day)?'#4F46C8':T.textSec}}>{day.getDate()}</div>
                   {dp.slice(0,3).map(p=><CalChip key={p.id} post={p} account={aMap[p.accountId]} onSelect={onSelect} onDrag={()=>setDragId(p.id)} compact/>)}
                   {dp.length>3&&<div style={{fontSize:9,color:T.textMuted}}>+{dp.length-3}</div>}
                 </div>
@@ -543,6 +543,7 @@ function PostPanel({post,accounts,initDate,onSave,onDelete,onClose}){
   const formats=selAcc?(PM[selAcc.platform]?.formats||['Post']):['Post'];
   useEffect(()=>{if(formats.length&&!formats.includes(form.format))sF('format',formats[0])},[form.accountId]);
   const T=useT();
+  const mob=useMobile();
   const IS=mkIS(T);
   function handleSave(){
     const now=new Date().toISOString();
@@ -644,7 +645,7 @@ function Settings({accounts,setAccounts}){
             <div key={acc.id} style={{background:T.card,borderRadius:9,padding:'9px 13px',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:9,opacity:acc.active?1:0.5}}>
               <span style={{width:8,height:8,borderRadius:'50%',background:m?.color||'#ccc',display:'inline-block',flexShrink:0}}/>
               <div style={{flex:1}}><div style={{fontSize:13,fontWeight:500,color:T.text}}>{acc.label}</div><div style={{fontSize:11,color:T.textMuted}}>{m?.label} · {acc.language?.toUpperCase()}</div></div>
-              <button onClick={()=>toggle(acc.id)} style={{padding:'3px 9px',borderRadius:5,border:`1px solid ${T.inputBorder}`,fontSize:11,cursor:'pointer',fontFamily:'inherit',background:acc.active?'#ECFDF5':'transparent',color:acc.active?'#059669':'#94A3B8'}}>{acc.active?'Активен':'Скрыт'}</button>
+              <button onClick={()=>toggle(acc.id)} style={{padding:'3px 9px',borderRadius:5,border:`1px solid ${T.inputBorder}`,fontSize:11,cursor:'pointer',fontFamily:'inherit',background:acc.active?'#EDEDFF':'transparent',color:acc.active?'#6366F1':'#94A3B8'}}>{acc.active?'Активен':'Скрыт'}</button>
               <button onClick={()=>remove(acc.id)} style={{background:'none',border:'none',cursor:'pointer',color:T.textFaint,fontSize:16,padding:'0 2px',lineHeight:1}}>×</button>
             </div>
           );
