@@ -399,6 +399,8 @@ function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalen
         ))}
       </div>
 
+      <AdvisorBlock posts={posts} accounts={accounts}/>
+
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
         <h2 style={{fontSize:16,fontWeight:600,margin:0,color:T.text}}>Ближайшие публикации</h2>
         <Btn onClick={onNew} size="sm">+ Добавить</Btn>
@@ -818,8 +820,10 @@ function Settings({accounts,setAccounts}){
   function add(){if(!newAcc.label.trim())return;setAccounts(as=>[...as,{...newAcc,id:`acc_${Date.now()}`,active:true}]);setNewAcc({platform:'instagram',label:'',language:'ru'});setShowAdd(false)}
   return(
     <div style={{padding:mob?'20px 16px 90px':'28px 32px',maxWidth:520,overflowY:'auto',flex:1}}>
-      <h1 style={{fontSize:24,fontWeight:600,margin:'0 0 4px',color:T.text}}>Аккаунты</h1>
-      <p style={{color:T.textSec,fontSize:13,margin:'0 0 18px'}}>Управляйте аккаунтами, скрывайте неактивные, добавляйте новые.</p>
+      <h1 style={{fontSize:24,fontWeight:600,margin:'0 0 4px',color:T.text}}>Настройки</h1>
+      <p style={{color:T.textSec,fontSize:13,margin:'0 0 18px'}}>Стратегия, аккаунты и параметры контента.</p>
+      <StrategySettings/>
+      <div style={{fontSize:15,fontWeight:600,color:T.text,marginBottom:10}}>Аккаунты</div>
       <div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:12}}>
         {accounts.map(acc=>{
           const m=PM[acc.platform];
@@ -846,6 +850,160 @@ function Settings({accounts,setAccounts}){
           <div style={{display:'flex',gap:6}}><Btn onClick={add}>Добавить</Btn><Btn onClick={()=>setShowAdd(false)} variant="secondary">Отмена</Btn></div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── STRATEGY HELPERS ────────────────────────────────────────────────────────
+const DEF_STRATEGY={
+  topics:['','','',''],
+  mix:{humor:15,expert:35,selling:15,personal:25,cases:5,reviews:5}
+};
+function loadStrategy(){try{const s=localStorage.getItem('strategy');return s?JSON.parse(s):DEF_STRATEGY;}catch{return DEF_STRATEGY;}}
+function saveStrategy(s){localStorage.setItem('strategy',JSON.stringify(s));}
+
+// ─── ADVISOR BLOCK ────────────────────────────────────────────────────────────
+function AdvisorBlock({posts,accounts}){
+  const T=useT();
+  const mob=useMobile();
+  const[status,setStatus]=useState('idle'); // idle|loading|done|error|nokey
+  const[advice,setAdvice]=useState(null);
+  const[lastRun,setLastRun]=useState(()=>localStorage.getItem('advisor_last')||null);
+
+  async function getAdvice(){
+    const apiKey=localStorage.getItem('anthropic_key')||'';
+    if(!apiKey){setStatus('nokey');return;}
+    setStatus('loading');
+    const strategy=loadStrategy();
+    const topics=strategy.topics.filter(Boolean);
+    const mix=strategy.mix;
+    const now=new Date();
+    const monthAgo=new Date(now-30*24*60*60*1000);
+    const recentPosts=posts.filter(p=>p.createdAt&&new Date(p.createdAt)>monthAgo);
+    const upcoming=posts.filter(p=>p.scheduledAt&&new Date(p.scheduledAt)>now&&p.status!=='published');
+    const typeCounts={};
+    CONTENT_TYPES.forEach(t=>{typeCounts[t.id]=recentPosts.filter(p=>p.contentType===t.id).length;});
+    const accStats={};
+    accounts.filter(a=>a.active).forEach(a=>{
+      accStats[a.label]={upcoming:upcoming.filter(p=>p.accountId===a.id).length,recent:recentPosts.filter(p=>p.accountId===a.id).length};
+    });
+    const prompt=`Ты советник по контент-стратегии. Анализируй данные и дай 3-4 конкретных совета.
+
+СТРАТЕГИЯ:
+Главные темы: ${topics.length?topics.join(', '):'не заданы'}
+Желаемый микс контента: Юмор ${mix.humor}%, Экспертный ${mix.expert}%, Продающий ${mix.selling}%, Личное ${mix.personal}%, Кейсы ${mix.cases}%, Отзывы ${mix.reviews}%
+
+ФАКТЫ ЗА ПОСЛЕДНИЕ 30 ДНЕЙ:
+Постов всего: ${recentPosts.length}
+По типу контента: ${Object.entries(typeCounts).map(([k,v])=>`${CONTENT_TYPES.find(t=>t.id===k)?.label||k}: ${v}`).join(', ')}
+Запланировано вперёд: ${upcoming.length} постов
+По аккаунтам: ${Object.entries(accStats).map(([k,v])=>`${k} (запланировано: ${v.upcoming}, за месяц: ${v.recent})`).join('; ')}
+
+Дай советы в JSON формате — массив объектов:
+[{"icon":"эмодзи","title":"короткий заголовок","text":"конкретный совет 1-2 предложения","type":"warning|tip|ok"}]
+Только JSON, без пояснений.`;
+    try{
+      const res=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+      });
+      const data=await res.json();
+      if(data.error){setStatus('error');return;}
+      const clean=data.content[0].text.replace(/```json|```/g,'').trim();
+      const items=JSON.parse(clean);
+      setAdvice(items);
+      setStatus('done');
+      const t=new Date().toLocaleString('ru-RU');
+      setLastRun(t);
+      localStorage.setItem('advisor_last',t);
+    }catch(e){setStatus('error');}
+  }
+
+  const typeColors={warning:'#FFF7ED',tip:'#F0EFF8',ok:'#F0FFF4'};
+  const textColors={warning:'#D97706',tip:'#7B7DB8',ok:'#059669'};
+
+  return(
+    <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:'16px 18px',marginBottom:20}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:advice?12:0}}>
+        <div>
+          <div style={{fontSize:14,fontWeight:600,color:T.text}}>🧭 Советник</div>
+          {lastRun&&<div style={{fontSize:11,color:T.textFaint,marginTop:1}}>Обновлено: {lastRun}</div>}
+        </div>
+        <button onClick={getAdvice} disabled={status==='loading'} style={{display:'flex',alignItems:'center',gap:5,padding:'7px 14px',borderRadius:20,border:'none',background:status==='loading'?T.cardAlt:'linear-gradient(135deg,#2C2A50,#7B7DB8)',color:status==='loading'?T.textSec:'#fff',fontSize:12,fontWeight:500,cursor:status==='loading'?'default':'pointer',fontFamily:'inherit'}}>
+          {status==='loading'?<><span style={{display:'inline-block',animation:'spin 1s linear infinite'}}>✨</span> Думаю...</>:'✦ Получить совет'}
+        </button>
+      </div>
+      {status==='nokey'&&<div style={{fontSize:12,color:'#EF4444',marginTop:8}}>Сначала добавь API ключ — нажми 🎙 Надиктовать на главной</div>}
+      {status==='error'&&<div style={{fontSize:12,color:'#EF4444',marginTop:8}}>Ошибка. Проверь API ключ и попробуй снова.</div>}
+      {status==='done'&&advice&&(
+        <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
+          {advice.map((item,i)=>(
+            <div key={i} style={{background:typeColors[item.type]||typeColors.tip,borderRadius:9,padding:'10px 13px',borderLeft:`3px solid ${textColors[item.type]||textColors.tip}`}}>
+              <div style={{fontSize:13,fontWeight:600,color:'#1A1A1A',marginBottom:2}}>{item.icon} {item.title}</div>
+              <div style={{fontSize:12,color:'#444',lineHeight:1.5}}>{item.text}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {status==='idle'&&!advice&&(
+        <div style={{fontSize:12,color:T.textFaint,marginTop:8}}>Нажми «Получить совет» — Claude проанализирует твои посты и подскажет что запланировать</div>
+      )}
+    </div>
+  );
+}
+
+// ─── STRATEGY SETTINGS ───────────────────────────────────────────────────────
+function StrategySettings(){
+  const T=useT();
+  const mob=useMobile();
+  const IS=mkIS(T);
+  const[strategy,setStrategy]=useState(loadStrategy);
+  const[saved,setSaved]=useState(false);
+
+  function setTopic(i,v){setStrategy(s=>({...s,topics:s.topics.map((t,j)=>j===i?v:t)}));}
+  function setMix(k,v){
+    const val=Math.max(0,Math.min(100,Number(v)));
+    setStrategy(s=>({...s,mix:{...s.mix,[k]:val}}));
+  }
+  function save(){saveStrategy(strategy);setSaved(true);setTimeout(()=>setSaved(false),2000);}
+  const total=Object.values(strategy.mix).reduce((a,b)=>a+b,0);
+
+  return(
+    <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:'16px 18px',marginBottom:16}}>
+      <div style={{fontSize:15,fontWeight:600,color:T.text,marginBottom:4}}>🎯 Контент-стратегия</div>
+      <div style={{fontSize:12,color:T.textSec,marginBottom:14}}>Советник использует эти настройки для рекомендаций</div>
+
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:T.textSec,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:8}}>Главные темы</div>
+        <div style={{display:'flex',flexDirection:'column',gap:6}}>
+          {strategy.topics.map((t,i)=>(
+            <input key={i} value={t} onChange={e=>setTopic(i,e.target.value)} placeholder={`Тема ${i+1}${i===0?' (например: переезд во Францию)':i===1?' (например: SMM советы)':i===2?' (например: изучение языков)':''}`} style={IS}/>
+          ))}
+        </div>
+      </div>
+
+      <div style={{marginBottom:14}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
+          <div style={{fontSize:11,fontWeight:700,color:T.textSec,textTransform:'uppercase',letterSpacing:'0.06em'}}>Желаемый микс контента</div>
+          <div style={{fontSize:12,fontWeight:600,color:total===100?'#059669':total>100?'#EF4444':'#D97706'}}>{total}% из 100%</div>
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {CONTENT_TYPES.map(ct=>(
+            <div key={ct.id} style={{display:'flex',alignItems:'center',gap:10}}>
+              <div style={{width:mob?90:110,fontSize:12,color:ct.color,fontWeight:500,flexShrink:0}}>{ct.label}</div>
+              <input type="range" min={0} max={60} value={strategy.mix[ct.id]||0} onChange={e=>setMix(ct.id,e.target.value)} style={{flex:1,accentColor:ct.color}}/>
+              <div style={{width:36,fontSize:13,fontWeight:600,color:T.text,textAlign:'right',flexShrink:0}}>{strategy.mix[ct.id]||0}%</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <Btn onClick={save}>Сохранить</Btn>
+        {saved&&<span style={{fontSize:12,color:'#059669'}}>✓ Сохранено!</span>}
+        {total!==100&&<span style={{fontSize:12,color:total>100?'#EF4444':'#D97706'}}>{total>100?'Сумма больше 100%':'Сумма должна быть 100%'}</span>}
+      </div>
     </div>
   );
 }
