@@ -13,16 +13,16 @@ const THEMES={
     border:'#EAE8E2',borderLight:'#F2EFE8',borderDash:'#D8D4CD',
     text:'#1A1A1A',textSec:'#6B6B6B',textMuted:'#9B9590',textFaint:'#B0ABA4',
     input:'#fff',inputBorder:'#E0DDD7',
-    tableHead:'#FAFAF8',calToday:'#FAFAFF',calTodayOver:'#EDEEFF',
-    sidebarBg:'#1E1B4B',progressBg:'#F0EDE8',
+    tableHead:'#FAFAF8',calToday:'#FAFAFF',calTodayOver:'#F0EFF8',
+    sidebarBg:'#2C2A50',progressBg:'#F0EDE8',
   },
   dark:{
-    bg:'#0D0B2E',card:'#1A1845',cardHover:'#221F55',cardAlt:'#161440',
-    border:'#2D2A6E',borderLight:'#1F1C5A',borderDash:'#2D2A6E',
+    bg:'#0D0B2E',card:'#221F52',cardHover:'#221F55',cardAlt:'#161440',
+    border:'#4A4880',borderLight:'#1F1C5A',borderDash:'#4A4880',
     text:'#E2DDD4',textSec:'#8A9E90',textMuted:'#5A58A0',textFaint:'#4A4890',
-    input:'#1A1845',inputBorder:'#3A3880',
+    input:'#221F52',inputBorder:'#4A4870',
     tableHead:'#131045',calToday:'#1A1850',calTodayOver:'#1E1C58',
-    sidebarBg:'#13114A',progressBg:'#2A2870',
+    sidebarBg:'#1A1848',progressBg:'#2A2870',
   },
 };
 
@@ -39,8 +39,8 @@ const PM = {
 const STATUSES = [
   { id:'idea',      label:'Идея',          color:'#94A3B8', bg:'#F1F5F9' },
   { id:'draft',     label:'Черновик',      color:'#D97706', bg:'#FFFBEB' },
-  { id:'ready',     label:'Готово',        color:'#6366F1', bg:'#EDEDFF' },
-  { id:'scheduled', label:'Запланировано', color:'#6366F1', bg:'#EEF2FF' },
+  { id:'ready',     label:'Готово',        color:'#7B7DB8', bg:'#F0EFF8' },
+  { id:'scheduled', label:'Запланировано', color:'#7B7DB8', bg:'#F0EFF8' },
   { id:'published', label:'Опубликовано',  color:'#64748B', bg:'#F8FAFC' },
 ];
 const SM = Object.fromEntries(STATUSES.map(s=>[s.id,s]));
@@ -49,7 +49,7 @@ const CONTENT_TYPES=[
   {id:'expert',       label:'Экспертный',     color:'#0A66C2',bg:'#EEF6FF'},
   {id:'sales',        label:'Продающий',      color:'#D97706',bg:'#FFFBEB'},
   {id:'personal',     label:'Личное',         color:'#7C3AED',bg:'#F5F0FF'},
-  {id:'cases',        label:'Кейсы',          color:'#6366F1',bg:'#EDEDFF'},
+  {id:'cases',        label:'Кейсы',          color:'#7B7DB8',bg:'#F0EFF8'},
   {id:'reviews',      label:'Отзывы',         color:'#0891B2',bg:'#ECFEFF'},
 ];
 const CTM=Object.fromEntries(CONTENT_TYPES.map(t=>[t.id,t]));
@@ -94,7 +94,7 @@ function Btn({children,onClick,variant='primary',size='md',style:sx={}}){
   const T=useT();
   const pad=size==='sm'?'5px 12px':'8px 16px';
   const fs=size==='sm'?12:13;
-  const V={primary:{background:'#1E1B4B',color:'#fff'},secondary:{background:T.cardAlt,color:T.text,border:`1px solid ${T.border}`},ghost:{background:'transparent',color:T.textSec},danger:{background:'#FEF2F2',color:'#DC2626'},green:{background:'#4F46C8',color:'#fff'}};
+  const V={primary:{background:'#2C2A50',color:'#fff'},secondary:{background:T.cardAlt,color:T.text,border:`1px solid ${T.border}`},ghost:{background:'transparent',color:T.textSec},danger:{background:'#FEF2F2',color:'#DC2626'},green:{background:'#6B6DA8',color:'#fff'}};
   return <button onClick={onClick} style={{display:'inline-flex',alignItems:'center',gap:6,padding:pad,fontSize:fs,borderRadius:8,fontFamily:'inherit',fontWeight:500,cursor:'pointer',border:'none',...V[variant],...sx}}>{children}</button>
 }
 
@@ -105,7 +105,7 @@ function Sidebar({view,setView,accounts}){
   const grouped={};
   accounts.filter(a=>a.active).forEach(a=>{(grouped[a.platform]??=[]).push(a)});
   return(
-    <aside style={{width:200,background:dark?'#13114A':'#1E1B4B',color:'#fff',display:'flex',flexDirection:'column',flexShrink:0,minHeight:'100%'}}>
+    <aside style={{width:200,background:dark?'#1A1848':'#2C2A50',color:'#fff',display:'flex',flexDirection:'column',flexShrink:0,minHeight:'100%'}}>
       <div style={{padding:'20px 15px 14px',borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
         <div style={{fontSize:17,color:'#E2DDD4',fontWeight:600,letterSpacing:'-0.3px'}}>Content OS</div>
         <div style={{fontSize:10,color:'rgba(255,255,255,0.28)',marginTop:2}}>Личный контент-план</div>
@@ -143,7 +143,7 @@ function BottomNav({view,setView}){
   const{dark,setDark}=useDark();
   const tabs=[['dashboard','⌂','Главная'],['calendar','▦','Календарь'],['posts','≡','Посты'],['settings','⊙','Аккаунты']];
   return(
-    <nav style={{position:'fixed',bottom:0,left:0,right:0,background:dark?'#13114A':'#1E1B4B',display:'flex',alignItems:'center',paddingBottom:'env(safe-area-inset-bottom)',zIndex:100,borderTop:'1px solid rgba(255,255,255,0.08)'}}>
+    <nav style={{position:'fixed',bottom:0,left:0,right:0,background:dark?'#1A1848':'#2C2A50',display:'flex',alignItems:'center',paddingBottom:'env(safe-area-inset-bottom)',zIndex:100,borderTop:'1px solid rgba(255,255,255,0.08)'}}>
       {tabs.map(([id,icon,label])=>(
         <button key={id} onClick={()=>setView(id)} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:2,padding:'10px 4px 8px',border:'none',background:'transparent',color:view===id?'#fff':'rgba(255,255,255,0.38)',fontFamily:'inherit',cursor:'pointer'}}>
           <span style={{fontSize:20}}>{icon}</span>
@@ -157,10 +157,185 @@ function BottomNav({view,setView}){
   );
 }
 
+function VoiceModal({onClose,onPostsCreated,accounts}){
+  const T=useT();
+  const mob=useMobile();
+  const[step,setStep]=useState('idle'); // idle | recording | thinking | done | error | nokey
+  const[transcript,setTranscript]=useState('');
+  const[apiKey,setApiKey]=useState(()=>localStorage.getItem('anthropic_key')||'');
+  const[result,setResult]=useState([]);
+  const[errorMsg,setErrorMsg]=useState('');
+  const recRef=React.useRef(null);
+
+  function startRecording(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){setErrorMsg('Браузер не поддерживает голосовой ввод. Попробуй Safari или Chrome.');setStep('error');return;}
+    const rec=new SR();
+    rec.lang='ru-RU';
+    rec.continuous=true;
+    rec.interimResults=true;
+    rec.onresult=e=>{
+      let t='';
+      for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript+' ';
+      setTranscript(t.trim());
+    };
+    rec.onerror=e=>{setErrorMsg('Ошибка микрофона: '+e.error);setStep('error');};
+    rec.start();
+    recRef.current=rec;
+    setStep('recording');
+  }
+
+  function stopRecording(){
+    recRef.current?.stop();
+    setStep('thinking');
+  }
+
+  async function analyzeWithClaude(text){
+    if(!apiKey.trim()){setStep('nokey');return;}
+    localStorage.setItem('anthropic_key',apiKey.trim());
+    try{
+      const res=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey.trim(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:1500,
+          messages:[{role:'user',content:`Ты помощник по контент-планированию. Пользователь надиктовал голосом свои идеи для публикаций в соцсетях. 
+
+Текст: "${text}"
+
+Разбей это на отдельные идеи для постов. Для каждой идеи сделай:
+- title: короткое название темы (до 60 символов), не финальный заголовок, а о чём пост
+- notes: краткая сводка 1-2 предложения — что именно хотела рассказать, чтобы не забыть
+
+Верни ТОЛЬКО JSON массив без пояснений:
+[{"title":"...","notes":"..."},{"title":"...","notes":"..."}]`}]
+        })
+      });
+      const data=await res.json();
+      if(data.error){setErrorMsg(data.error.message||'Ошибка API');setStep('error');return;}
+      const text2=data.content[0].text.trim();
+      const clean=text2.replace(/```json|```/g,'').trim();
+      const posts=JSON.parse(clean);
+      setResult(posts);
+      setStep('done');
+    }catch(e){
+      setErrorMsg('Ошибка: '+e.message);
+      setStep('error');
+    }
+  }
+
+  useEffect(()=>{if(step==='thinking'&&transcript)analyzeWithClaude(transcript);},[step]);
+
+  function saveAll(){
+    const now=new Date().toISOString();
+    result.forEach(p=>{
+      const id=`p${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
+      const post={id,title:p.title,notes:p.notes,status:'idea',accountId:accounts[0]?.id||'',format:'Post',contentType:'',language:'ru',scheduledAt:null,text:'',mediaRef:'',mediaData:null,createdAt:now,updatedAt:now};
+      setDoc(doc(db,'posts',id),post);
+    });
+    onPostsCreated(result.length);
+    onClose();
+  }
+
+  const IS=mkIS(T);
+  const overlay={position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:16};
+  const box={background:T.card,borderRadius:16,padding:mob?'24px 20px':'28px 32px',width:'100%',maxWidth:480,boxShadow:'0 20px 60px rgba(0,0,0,0.3)',position:'relative'};
+
+  return(
+    <div style={overlay} onClick={e=>{if(e.target===e.currentTarget)onClose()}}>
+      <div style={box}>
+        <button onClick={onClose} style={{position:'absolute',top:16,right:16,background:'none',border:'none',cursor:'pointer',color:T.textMuted,fontSize:20,lineHeight:1}}>✕</button>
+
+        <div style={{fontSize:18,fontWeight:700,color:T.text,marginBottom:4}}>🎙 Надиктовать идеи</div>
+        <div style={{fontSize:13,color:T.textSec,marginBottom:20}}>Говори о чём хочешь написать — Claude разберёт и создаст черновики</div>
+
+        {/* API Key input — только если ключа ещё нет */}
+        {(step==='idle'||step==='nokey')&&!apiKey.trim()&&(
+          <div style={{marginBottom:16}}>
+            <label style={{fontSize:11,fontWeight:600,color:T.textSec,textTransform:'uppercase',letterSpacing:'0.04em',display:'block',marginBottom:5}}>Anthropic API Key</label>
+            <input value={apiKey} onChange={e=>setApiKey(e.target.value)} placeholder="sk-ant-..." type="password" style={{...IS,fontFamily:'monospace'}}/>
+            <div style={{fontSize:11,color:T.textFaint,marginTop:5}}>Ключ сохраняется только в твоём браузере</div>
+          </div>
+        )}
+        {step==='nokey'&&<div style={{fontSize:12,color:'#EF4444',marginBottom:12}}>Введи API ключ чтобы продолжить</div>}
+        {(step==='idle')&&apiKey.trim()&&(
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14,padding:'7px 12px',background:T.cardAlt,borderRadius:8}}>
+            <span style={{fontSize:12,color:'#7B7DB8',fontWeight:500}}>✓ API ключ подключён</span>
+            <button onClick={()=>{localStorage.removeItem('anthropic_key');setApiKey('');}} style={{fontSize:11,color:T.textMuted,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit'}}>сменить</button>
+          </div>
+        )}
+
+        {/* IDLE */}
+        {step==='idle'&&(
+          <div style={{textAlign:'center',padding:'16px 0'}}>
+            <button onClick={startRecording} style={{width:80,height:80,borderRadius:'50%',background:'linear-gradient(135deg,#2C2A50,#7B7DB8)',border:'none',cursor:'pointer',fontSize:32,boxShadow:'0 4px 20px rgba(99,102,241,0.4)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>🎙</button>
+            <div style={{fontSize:13,color:T.textSec}}>Нажми и начни говорить</div>
+          </div>
+        )}
+
+        {/* RECORDING */}
+        {step==='recording'&&(
+          <div style={{textAlign:'center',padding:'16px 0'}}>
+            <button onClick={stopRecording} style={{width:80,height:80,borderRadius:'50%',background:'#EF4444',border:'none',cursor:'pointer',fontSize:32,animation:'pulse 1s infinite',boxShadow:'0 4px 20px rgba(239,68,68,0.5)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>⏹</button>
+            <div style={{fontSize:13,color:'#EF4444',fontWeight:500}}>Запись... нажми чтобы остановить</div>
+            {transcript&&<div style={{marginTop:12,padding:'10px 14px',background:T.cardAlt,borderRadius:8,fontSize:13,color:T.text,textAlign:'left',maxHeight:100,overflowY:'auto',lineHeight:1.5}}>{transcript}</div>}
+          </div>
+        )}
+
+        {/* THINKING */}
+        {step==='thinking'&&(
+          <div style={{textAlign:'center',padding:'24px 0'}}>
+            <div style={{fontSize:36,marginBottom:12,animation:'spin 2s linear infinite',display:'inline-block'}}>✨</div>
+            <div style={{fontSize:14,color:T.text,fontWeight:500}}>Claude анализирует...</div>
+            <div style={{fontSize:12,color:T.textSec,marginTop:4}}>Разбиваю на идеи для постов</div>
+          </div>
+        )}
+
+        {/* DONE */}
+        {step==='done'&&(
+          <div>
+            <div style={{fontSize:13,fontWeight:600,color:T.text,marginBottom:10}}>Нашла {result.length} идей 🎉</div>
+            <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:16,maxHeight:250,overflowY:'auto'}}>
+              {result.map((p,i)=>(
+                <div key={i} style={{background:T.cardAlt,borderRadius:8,padding:'10px 12px',borderLeft:`3px solid #7B7DB8`}}>
+                  <div style={{fontSize:13,fontWeight:600,color:T.text}}>{p.title}</div>
+                  <div style={{fontSize:12,color:T.textSec,marginTop:3}}>{p.notes}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:8}}>
+              <Btn onClick={saveAll} style={{flex:1,justifyContent:'center'}}>Добавить все как идеи</Btn>
+              <Btn onClick={onClose} variant="secondary">Отмена</Btn>
+            </div>
+          </div>
+        )}
+
+        {/* ERROR */}
+        {step==='error'&&(
+          <div style={{textAlign:'center',padding:'12px 0'}}>
+            <div style={{fontSize:13,color:'#EF4444',marginBottom:12}}>{errorMsg}</div>
+            <Btn onClick={()=>setStep('idle')} variant="secondary">Попробовать снова</Btn>
+          </div>
+        )}
+
+        <style>{`@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}} @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      </div>
+    </div>
+  );
+}
+
 function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalendar}){
   const T=useT();
   const mob=useMobile();
+  const[voiceOpen,setVoiceOpen]=useState(false);
+  const[voiceToast,setVoiceToast]=useState(null);
   const now=new Date();
+
+  function handlePostsCreated(count){
+    setVoiceToast(`✨ Добавлено ${count} идей!`);
+    setTimeout(()=>setVoiceToast(null),3500);
+  }
   const aMap=useMemo(()=>Object.fromEntries(accounts.map(a=>[a.id,a])),[accounts]);
   const upcoming=useMemo(()=>posts.filter(p=>p.scheduledAt&&new Date(p.scheduledAt)>=now&&p.status!=='published').sort((a,b)=>new Date(a.scheduledAt)-new Date(b.scheduledAt)).slice(0,6),[posts]);
   const publishedToday=useMemo(()=>posts.filter(p=>p.status==='published'&&p.publishedAt&&sameDay(new Date(p.publishedAt),now)).sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt)),[posts]);
@@ -190,12 +365,19 @@ function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalen
 
   return(
     <div style={{padding:mob?'20px 16px 90px':'28px 32px',maxWidth:780,overflowY:'auto',flex:1}}>
-      <div style={{marginBottom:18}}>
-        <h1 style={{fontSize:mob?22:28,fontWeight:600,margin:0,letterSpacing:'-0.5px',color:T.text}}>Привет 👋</h1>
-        <p style={{color:T.textSec,fontSize:mob?12:13,marginTop:3,marginBottom:0}}>{now.getDate()} {MG[now.getMonth()]} · {now.toLocaleDateString('ru-RU',{weekday:'long'})}</p>
+      {voiceToast&&<div style={{position:'fixed',top:20,left:'50%',transform:'translateX(-50%)',background:'#2C2A50',color:'#fff',padding:'10px 20px',borderRadius:20,fontSize:14,fontWeight:500,zIndex:500,boxShadow:'0 4px 20px rgba(0,0,0,0.3)'}}>{voiceToast}</div>}
+      {voiceOpen&&<VoiceModal onClose={()=>setVoiceOpen(false)} onPostsCreated={handlePostsCreated} accounts={accounts}/>}
+      <div style={{marginBottom:18,display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+        <div>
+          <h1 style={{fontSize:mob?22:28,fontWeight:600,margin:0,letterSpacing:'-0.5px',color:T.text}}>Привет 👋</h1>
+          <p style={{color:T.textSec,fontSize:mob?12:13,marginTop:3,marginBottom:0}}>{now.getDate()} {MG[now.getMonth()]} · {now.toLocaleDateString('ru-RU',{weekday:'long'})}</p>
+        </div>
+        <button onClick={()=>setVoiceOpen(true)} style={{display:'flex',alignItems:'center',gap:6,padding:'9px 14px',borderRadius:20,border:'none',background:'linear-gradient(135deg,#2C2A50,#7B7DB8)',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer',boxShadow:'0 2px 12px rgba(99,102,241,0.35)',flexShrink:0}}>
+          🎙 {mob?'Идеи':'Надиктовать'}
+        </button>
       </div>
       {showReminder&&(
-        <div style={{background:'linear-gradient(135deg,#1E1B4B,#3D3A8E)',borderRadius:12,padding:'14px 18px',marginBottom:20,color:'#fff',display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+        <div style={{background:'linear-gradient(135deg,#2C2A50,#4E4C80)',borderRadius:12,padding:'14px 18px',marginBottom:20,color:'#fff',display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
           <div>
             <div style={{fontSize:10,fontWeight:700,color:'#A5B4FC',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:3}}>Напоминание</div>
             <div style={{fontSize:14,fontWeight:500}}>На этой неделе нет запланированных публикаций</div>
@@ -209,7 +391,7 @@ function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalen
         </div>
       )}
       <div style={{display:'grid',gridTemplateColumns:mob?'repeat(2,1fr)':'repeat(4,1fr)',gap:8,marginBottom:22}}>
-        {[['Всего',st.total,T.text],['Идей',st.ideas,'#94A3B8'],['В работе',st.inWork,'#D97706'],['Запланировано',st.scheduled,'#6366F1']].map(([label,val,color])=>(
+        {[['Всего',st.total,T.text],['Идей',st.ideas,'#94A3B8'],['В работе',st.inWork,'#D97706'],['Запланировано',st.scheduled,'#7B7DB8']].map(([label,val,color])=>(
           <div key={label} style={{background:T.card,borderRadius:10,padding:'13px 15px',border:`1px solid ${T.border}`}}>
             <div style={{fontSize:24,fontWeight:700,color,lineHeight:1}}>{val}</div>
             <div style={{fontSize:11,color:T.textSec,marginTop:4}}>{label}</div>
@@ -235,7 +417,7 @@ function Dashboard({posts,accounts,showReminder,onDismiss,onNew,onSelect,goCalen
 
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
         <h2 style={{fontSize:16,fontWeight:600,margin:0,color:T.text}}>Опубликовано сегодня</h2>
-        {publishedToday.length>0&&<span style={{fontSize:12,background:'#EDEDFF',color:'#6366F1',padding:'2px 8px',borderRadius:20,fontWeight:500}}>{publishedToday.length}</span>}
+        {publishedToday.length>0&&<span style={{fontSize:12,background:'#F0EFF8',color:'#7B7DB8',padding:'2px 8px',borderRadius:20,fontWeight:500}}>{publishedToday.length}</span>}
       </div>
       {publishedToday.length===0?(
         <div style={{background:T.card,borderRadius:10,border:`1px solid ${T.border}`,padding:'18px 20px',display:'flex',alignItems:'center',gap:10,color:T.textMuted}}>
@@ -272,7 +454,7 @@ function CalendarView({posts,accounts,onSelect,onNewOnDate,onMove}){
         <h1 style={{fontSize:mob?18:24,fontWeight:600,margin:0,color:T.text}}>Календарь</h1>
         <div style={{display:'flex',gap:5,alignItems:'center',flexWrap:'wrap'}}>
           <div style={{display:'flex',background:T.card,border:`1px solid ${T.inputBorder}`,borderRadius:7,overflow:'hidden'}}>
-            {['week','month'].map(m=><button key={m} onClick={()=>setMode(m)} style={{padding:'5px 12px',fontSize:12,fontFamily:'inherit',fontWeight:500,border:'none',cursor:'pointer',background:mode===m?'#1E1B4B':'transparent',color:mode===m?'#fff':T.textSec}}>{m==='week'?'Неделя':'Месяц'}</button>)}
+            {['week','month'].map(m=><button key={m} onClick={()=>setMode(m)} style={{padding:'5px 12px',fontSize:12,fontFamily:'inherit',fontWeight:500,border:'none',cursor:'pointer',background:mode===m?'#2C2A50':'transparent',color:mode===m?'#fff':T.textSec}}>{m==='week'?'Неделя':'Месяц'}</button>)}
           </div>
           <Btn onClick={()=>nav(-1)} variant="secondary" size="sm">←</Btn>
           <span style={{fontSize:12,fontWeight:500,minWidth:180,textAlign:'center',color:T.text}}>{title}</span>
@@ -290,7 +472,7 @@ function CalendarView({posts,accounts,onSelect,onNewOnDate,onMove}){
             <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',borderBottom:`1px solid ${T.border}`}}>
               {wDays.map((day,i)=>(
                 <div key={i} style={{padding:'7px',textAlign:'center',borderRight:i<6?`1px solid ${T.border}`:'none',background:isToday(day)?T.calToday:'transparent'}}>
-                  <span style={{fontSize:16,fontWeight:isToday(day)?700:400,color:isToday(day)?'#4F46C8':T.text}}>{day.getDate()}</span>
+                  <span style={{fontSize:16,fontWeight:isToday(day)?700:400,color:isToday(day)?'#6B6DA8':T.text}}>{day.getDate()}</span>
                 </div>
               ))}
             </div>
@@ -315,7 +497,7 @@ function CalendarView({posts,accounts,onSelect,onNewOnDate,onMove}){
               const over=overDate&&sameDay(new Date(overDate),day);
               return(
                 <div key={i} {...dnd(day)} style={{borderRight:i%7<6?`1px solid ${T.border}`:'none',borderBottom:`1px solid ${T.border}`,padding:'4px',minHeight:68,opacity:inM?1:0.28,background:over?T.calTodayOver:isToday(day)?T.calToday:'transparent'}}>
-                  <div style={{fontSize:11,textAlign:'right',marginBottom:2,fontWeight:isToday(day)?700:400,color:isToday(day)?'#4F46C8':T.textSec}}>{day.getDate()}</div>
+                  <div style={{fontSize:11,textAlign:'right',marginBottom:2,fontWeight:isToday(day)?700:400,color:isToday(day)?'#6B6DA8':T.textSec}}>{day.getDate()}</div>
                   {dp.slice(0,3).map(p=><CalChip key={p.id} post={p} account={aMap[p.accountId]} onSelect={onSelect} onDrag={()=>setDragId(p.id)} compact/>)}
                   {dp.length>3&&<div style={{fontSize:9,color:T.textMuted}}>+{dp.length-3}</div>}
                 </div>
@@ -512,7 +694,7 @@ function MediaField({mediaRef,mediaData,onFileSelect,onClear}){
           <span style={{fontSize:18,flexShrink:0}}>{FILE_ICONS[ftype]}</span>
           <span style={{fontSize:12,flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:T.text}}>{mediaRef}</span>
           {mediaData&&(
-            <button onClick={openFile} style={{background:'#EEF2FF',border:'none',cursor:'pointer',fontSize:11,color:'#6366F1',fontFamily:'inherit',fontWeight:600,padding:'3px 8px',borderRadius:5,flexShrink:0,whiteSpace:'nowrap'}}>
+            <button onClick={openFile} style={{background:'#F0EFF8',border:'none',cursor:'pointer',fontSize:11,color:'#7B7DB8',fontFamily:'inherit',fontWeight:600,padding:'3px 8px',borderRadius:5,flexShrink:0,whiteSpace:'nowrap'}}>
               Открыть ↗
             </button>
           )}
@@ -645,7 +827,7 @@ function Settings({accounts,setAccounts}){
             <div key={acc.id} style={{background:T.card,borderRadius:9,padding:'9px 13px',border:`1px solid ${T.border}`,display:'flex',alignItems:'center',gap:9,opacity:acc.active?1:0.5}}>
               <span style={{width:8,height:8,borderRadius:'50%',background:m?.color||'#ccc',display:'inline-block',flexShrink:0}}/>
               <div style={{flex:1}}><div style={{fontSize:13,fontWeight:500,color:T.text}}>{acc.label}</div><div style={{fontSize:11,color:T.textMuted}}>{m?.label} · {acc.language?.toUpperCase()}</div></div>
-              <button onClick={()=>toggle(acc.id)} style={{padding:'3px 9px',borderRadius:5,border:`1px solid ${T.inputBorder}`,fontSize:11,cursor:'pointer',fontFamily:'inherit',background:acc.active?'#EDEDFF':'transparent',color:acc.active?'#6366F1':'#94A3B8'}}>{acc.active?'Активен':'Скрыт'}</button>
+              <button onClick={()=>toggle(acc.id)} style={{padding:'3px 9px',borderRadius:5,border:`1px solid ${T.inputBorder}`,fontSize:11,cursor:'pointer',fontFamily:'inherit',background:acc.active?'#F0EFF8':'transparent',color:acc.active?'#7B7DB8':'#94A3B8'}}>{acc.active?'Активен':'Скрыт'}</button>
               <button onClick={()=>remove(acc.id)} style={{background:'none',border:'none',cursor:'pointer',color:T.textFaint,fontSize:16,padding:'0 2px',lineHeight:1}}>×</button>
             </div>
           );
