@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { db } from "./firebase";
-import { collection, doc, onSnapshot, setDoc, deleteDoc } from "firebase/firestore";
+
+
 
 const ThemeCtx=React.createContext({dark:false,T:{},setDark:()=>{}});
 const useT=()=>React.useContext(ThemeCtx).T;
@@ -1013,62 +1013,23 @@ const newId=()=>`p${++_c}`;
 
 export default function App(){
   const[view,setView]=useState('dashboard');
-  const[accounts,setAccountsState]=useState(DEF_ACCOUNTS);
-  const[posts,setPostsState]=useState([]);
-  const[loading,setLoading]=useState(true);
+  const[accounts,setAccounts]=useState(DEF_ACCOUNTS);
+  const[posts,setPosts]=useState(makeSamples);
   const[panel,setPanel]=useState(null);
   const[dismissed,setDismissed]=useState(false);
-  const[dark,setDark]=useState(()=>localStorage.getItem('theme')==='dark');
+  const[dark,setDark]=useState(false);
   const T=dark?THEMES.dark:THEMES.light;
-
-  useEffect(()=>{localStorage.setItem('theme',dark?'dark':'light')},[dark]);
-
-  // Load posts from Firebase
-  useEffect(()=>{
-    const unsub=onSnapshot(collection(db,'posts'),snap=>{
-      const data=snap.docs.map(d=>({id:d.id,...d.data()}));
-      setPostsState(data);
-      setLoading(false);
-    });
-    return unsub;
-  },[]);
-
-  // Load accounts from Firebase
-  useEffect(()=>{
-    const unsub=onSnapshot(collection(db,'accounts'),snap=>{
-      if(snap.docs.length>0){
-        setAccountsState(snap.docs.map(d=>({id:d.id,...d.data()})));
-      } else {
-        // First launch — save default accounts to Firebase
-        DEF_ACCOUNTS.forEach(a=>setDoc(doc(db,'accounts',a.id),a));
-      }
-    });
-    return unsub;
-  },[]);
 
   // Auto-publish
   useEffect(()=>{
     function autoPublish(){
       const now=new Date();
-      posts.forEach(p=>{
-        if(p.status==='scheduled'&&p.scheduledAt&&new Date(p.scheduledAt)<=now){
-          const updated={...p,status:'published',publishedAt:p.scheduledAt,updatedAt:now.toISOString()};
-          setDoc(doc(db,'posts',p.id),updated);
-        }
-      });
+      setPosts(ps=>ps.map(p=>p.status==='scheduled'&&p.scheduledAt&&new Date(p.scheduledAt)<=now?{...p,status:'published',publishedAt:p.scheduledAt,updatedAt:now.toISOString()}:p));
     }
     autoPublish();
     const timer=setInterval(autoPublish,60000);
     return()=>clearInterval(timer);
-  },[posts]);
-
-  // Save accounts to Firebase when changed
-  function setAccounts(updater){
-    const updated=typeof updater==='function'?updater(accounts):updater;
-    updated.forEach(a=>setDoc(doc(db,'accounts',a.id),a));
-    // Delete removed accounts
-    accounts.forEach(a=>{if(!updated.find(u=>u.id===a.id))deleteDoc(doc(db,'accounts',a.id))});
-  }
+  },[]);
 
   const wDays=getWeekDays(new Date());
   const wEnd=new Date(wDays[6]);wEnd.setHours(23,59,59,999);
@@ -1078,41 +1039,29 @@ export default function App(){
   const panelPost=useMemo(()=>{if(!panel||panel==='new'||(typeof panel==='object'))return null;return posts.find(p=>p.id===panel)||null},[panel,posts]);
   const panelDate=panel&&typeof panel==='object'&&panel.date?panel.date:null;
 
-  async function savePost(form){
+  function savePost(form){
     const now=new Date().toISOString();
     const id=form.id||newId();
     const data={...form,id,updatedAt:now,...(!form.id?{createdAt:now}:{})};
-    await setDoc(doc(db,'posts',id),data);
+    setPosts(ps=>form.id?ps.map(p=>p.id===id?data:p):[...ps,data]);
     setPanel(null);
   }
 
-  async function deletePost(id){
-    await deleteDoc(doc(db,'posts',id));
+  function deletePost(id){
+    setPosts(ps=>ps.filter(p=>p.id!==id));
     setPanel(null);
   }
 
-  async function movePost(id,date){
-    const p=posts.find(x=>x.id===id);
-    if(!p)return;
-    const updated={...p,scheduledAt:date,status:['idea','draft'].includes(p.status)?'scheduled':p.status,updatedAt:new Date().toISOString()};
-    await setDoc(doc(db,'posts',id),updated);
-  }
-
-  if(loading){
-    return(
-      <ThemeCtx.Provider value={{dark,T,setDark}}>
-        <div style={{display:'flex',height:'100vh',alignItems:'center',justifyContent:'center',background:T.bg,fontFamily:'-apple-system,BlinkMacSystemFont,sans-serif'}}>
-          <div style={{textAlign:'center'}}>
-            <div style={{fontSize:32,marginBottom:12}}>🌿</div>
-            <div style={{fontSize:14,color:T.textSec}}>Загружаем данные...</div>
-          </div>
-        </div>
-      </ThemeCtx.Provider>
-    );
+  function movePost(id,date){
+    setPosts(ps=>ps.map(p=>p.id===id?{...p,scheduledAt:date,status:['idea','draft'].includes(p.status)?'scheduled':p.status,updatedAt:new Date().toISOString()}:p));
   }
 
   return(
     <ThemeCtx.Provider value={{dark,T,setDark}}>
+      {/* DEMO BANNER */}
+      <div style={{background:'#2C2A50',color:'#fff',textAlign:'center',padding:'6px',fontSize:12,fontWeight:500,letterSpacing:'0.03em'}}>
+        🎭 Демо-версия — данные не сохраняются
+      </div>
       <AppInner view={view} setView={setView} accounts={accounts} setAccounts={setAccounts} posts={posts} panel={panel} setPanel={setPanel} panelPost={panelPost} panelDate={panelDate} showReminder={showReminder} setDismissed={setDismissed} savePost={savePost} deletePost={deletePost} movePost={movePost}/>
     </ThemeCtx.Provider>
   );
